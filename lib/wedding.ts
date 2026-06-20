@@ -22,8 +22,8 @@ export const DEFAULT_CONFIG: WeddingConfig = {
   account_holder: '',
   account_rut: '',
   bank_email: '',
-  hero_message: '¡Nos casamos! Únete a nosotros en el día más especial de nuestras vidas.',
-  dress_code: 'Formal / Semiformal',
+  hero_message: 'Con la bendición de Dios y el amor de nuestras familias, queremos compartir contigo el inicio de nuestra nueva vida juntos.',
+  dress_code: 'Formal elegante · tonos blanco, dorado, negro o lila sugeridos',
   updated_at: new Date().toISOString(),
 }
 

@@ -11,45 +11,22 @@ export default function QuienesSomosPage() {
   const [config, setConfig] = useState<WeddingConfig>(DEFAULT_CONFIG)
 
   useEffect(() => {
-    supabase.from('wedding_config').select('*').single().then(({ data }) => {
-      if (data) setConfig(data as WeddingConfig)
-    })
-    supabase.from('access_log').insert({
-      page: '/quienes-somos',
-      user_agent: navigator.userAgent.slice(0, 200),
-    }).then(() => {})
+    supabase.from('wedding_config').select('*').single().then(({ data }) => { if (data) setConfig(data as WeddingConfig) })
+    supabase.from('access_log').insert({ page: '/quienes-somos', user_agent: navigator.userAgent.slice(0, 200) }).then(() => {})
   }, [])
 
   return (
     <>
       <Navbar />
-      <main style={{ paddingTop: 72 }}>
-        <div
-          style={{
-            background: 'linear-gradient(135deg, var(--rose-light), var(--cream))',
-            padding: '4rem 1rem 2rem',
-            textAlign: 'center',
-          }}
-        >
-          <p
-            className="font-inter"
-            style={{
-              fontSize: '0.75rem', letterSpacing: '0.35em',
-              textTransform: 'uppercase', color: 'var(--rose)', marginBottom: 8,
-            }}
-          >
-            Conócenos
-          </p>
-          <h1
-            className="font-display"
-            style={{
-              fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-              fontWeight: 400, color: 'var(--charcoal)',
-            }}
-          >
-            Quiénes Somos
-          </h1>
-        </div>
+      <main>
+        <section className="lux-hero starfield" style={{ minHeight: '58vh' }}>
+          <span className="shooting-star" style={{ top: '20%', left: '78%' }} />
+          <div className="section-head" style={{ color: '#fff', position: 'relative', zIndex: 2 }}>
+            <p className="section-label" style={{ color: 'rgba(234,211,154,.84)' }}>Conócenos</p>
+            <h1 className="section-title" style={{ color: '#fffaf1' }}>Quiénes somos</h1>
+            <p className="section-copy" style={{ color: 'rgba(255,250,241,.74)' }}>Nuestra historia, nuestros sueños y la alegría de compartir este día.</p>
+          </div>
+        </section>
         <QuienesSomosSection config={config} />
       </main>
       <Footer config={config} />

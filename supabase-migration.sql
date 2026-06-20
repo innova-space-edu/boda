@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.wedding_config (
   venue_name TEXT NOT NULL DEFAULT 'Catedral de Antofagasta',
   venue_address TEXT NOT NULL DEFAULT 'Plaza España s/n',
   city TEXT NOT NULL DEFAULT 'Antofagasta, Chile',
-  love_story TEXT DEFAULT 'Nuestra historia comenzó con una mirada...',
+  love_story TEXT DEFAULT 'Nuestra historia comenzó con una mirada, creció con el tiempo y hoy culmina en el día más especial de nuestras vidas. Gracias por ser parte de este momento único.',
   bride_bio TEXT DEFAULT '',
   groom_bio TEXT DEFAULT '',
   bride_image_url TEXT DEFAULT '',
@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS public.wedding_config (
   account_holder TEXT DEFAULT '',
   account_rut TEXT DEFAULT '',
   bank_email TEXT DEFAULT '',
-  hero_message TEXT DEFAULT '¡Nos casamos!',
-  dress_code TEXT DEFAULT 'Formal / Semiformal',
+  hero_message TEXT DEFAULT 'Con la bendición de Dios y el amor de nuestras familias, queremos compartir contigo el inicio de nuestra nueva vida juntos.',
+  dress_code TEXT DEFAULT 'Formal elegante · tonos blanco, dorado, negro o lila sugeridos',
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

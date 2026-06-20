@@ -1,44 +1,66 @@
 # Portal de Boda — Carolina & Esthefano
 
-Portal web animado para invitación, confirmación de asistencia y administración de invitados.
+Portal web para invitación digital, confirmación de asistencia, lluvia de sobres y administración de invitados.
+
+## Diseño actualizado
+
+Tema visual: invitación digital elegante en blanco, dorado, negro y lila, con flores, rosas, estrellas animadas, estrellas fugaces, sobre interactivo, calendario con corazón en el día 6 y mapa funcional de Google Maps.
+
+Incluye imágenes temporales en:
+
+```text
+public/images/wedding/
+```
+
+Formatos recomendados para reemplazar imágenes:
+
+```text
+URL pública directa
+.jpg
+.jpeg
+.png
+```
+
+Las imágenes temporales se pueden reemplazar después manteniendo el mismo nombre o cambiando las URL desde el panel administrador.
 
 ## Rutas principales
 
-| Ruta | Uso |
-|---|---|
-| `/` | Home con intro animada de novia caminando, información de la boda y countdown |
-| `/quienes-somos` | Historia e información de los novios |
-| `/confirmar` | Confirmación con animación de sobre |
-| `/invite` | Página pública solo con encuesta para compartir por WhatsApp |
-| `/admin/login` | Login del administrador |
-| `/admin/dashboard` | Panel de administración |
-
-## Funciones incluidas
-
-- Intro animada con novia caminando hacia iglesia/catedral.
-- Banner fijo superior con navegación.
-- Home con datos de boda, fecha, hora, lugar, vestimenta y cuenta regresiva.
-- Sección “Quiénes somos” con texto e imágenes editables.
-- Encuesta RSVP por núcleo familiar.
-- Registro de integrantes asistentes/no asistentes.
-- Campo de restricciones alimentarias.
-- Sección “Lluvia de sobres” con datos bancarios editables.
-- Panel admin con estadísticas, respuestas, accesos y exportación CSV.
-- Configuración editable desde el panel admin: nombres, fecha, hora, lugar, textos, imágenes y datos bancarios.
-
-## Instalación local
-
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
+```text
+/                  Portal principal con invitación digital
+/confirmar         Confirmación con sobre animado
+/invite            Página solo con encuesta para compartir
+/quienes-somos     Información de los novios
+/admin/login       Login administrador
+/admin/dashboard   Panel administrador
 ```
 
-Abre `http://localhost:3000`.
+## Datos de boda incluidos
+
+- Novia: Carolina Elizabeth Vega Carrera
+- Novio: Esthefano Gonzalo Morales Campaña
+- Fecha: 6 de febrero de 2027
+- Lugar: Catedral de Antofagasta
+- Ciudad: Antofagasta
+- Hora: 18:00 hrs
+- WhatsApp: 926301822 y 988215400
+
+## Cloudflare Pages
+
+Configuración recomendada:
+
+```text
+Framework preset: Next.js
+Build command: npm run build
+Build output directory: out
+Root directory: /
+Production branch: main
+```
+
+El proyecto tiene `output: "export"` en `next.config.ts`, por lo que `npm run build` genera automáticamente la carpeta `out`.
 
 ## Variables de entorno
 
-Copia `.env.example` como `.env.local` y completa:
+Crear en Cloudflare Pages o en `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -46,45 +68,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
 NEXT_PUBLIC_ADMIN_EMAIL=sthefanomc@gmail.com
 ```
 
-No subas `.env.local` a GitHub.
-
 ## Supabase
 
-1. Crea un proyecto en Supabase.
-2. Entra a `SQL Editor`.
-3. Ejecuta el archivo `supabase-migration.sql` completo.
-4. En `Authentication > Users`, crea el usuario administrador con el correo definido en `NEXT_PUBLIC_ADMIN_EMAIL`.
-5. En Supabase Auth, deja desactivado el registro público si solo quieres usuarios creados manualmente.
+Ejecutar el archivo:
 
-## Deploy en Vercel
+```text
+supabase-migration.sql
+```
 
-1. Sube el proyecto a GitHub.
-2. En Vercel, importa el repositorio.
-3. Agrega estas variables en `Project Settings > Environment Variables`:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_ADMIN_EMAIL`
-4. Deploy.
-5. Después de cambiar variables de entorno, haz `Redeploy`.
+Luego crear el usuario administrador en Supabase Authentication con el correo configurado en `NEXT_PUBLIC_ADMIN_EMAIL`.
 
-## Comandos útiles
+## Comandos locales
 
 ```bash
+npm install
 npm run lint
 npm run build
 npm run dev
 ```
 
-## Seguridad
+## Notas importantes
 
-- No se incluye contraseña en el repositorio.
-- Las políticas RLS de Supabase restringen lectura/edición admin al correo configurado en `supabase-migration.sql`.
-- La encuesta pública solo puede insertar respuestas, no leerlas.
-- Los visitantes pueden leer la configuración pública de la boda, pero no modificarla.
-
-## Notas
-
-Si cambias el correo administrador, actualiza dos lugares:
-
-1. `.env.local` / variables de Vercel: `NEXT_PUBLIC_ADMIN_EMAIL`
-2. `supabase-migration.sql`, función `public.is_wedding_admin()`
+- No subir `.env.local` a GitHub.
+- La carpeta `out` no se crea manualmente; se genera durante el build.
+- El mapa usa Google Maps mediante iframe y link de búsqueda.
+- Los botones de WhatsApp usan enlaces `wa.me` con código de país de Chile.

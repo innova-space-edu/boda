@@ -183,10 +183,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
+    <div className="admin-shell">
       {/* Admin navbar */}
-      <header className="navbar-glass sticky top-0 z-50 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="admin-top">
+        <div className="admin-top-inner">
           <div className="flex items-center gap-2">
             <Heart size={16} fill="var(--rose)" color="var(--rose)" />
             <span className="font-display" style={{ fontSize: '1.1rem', color: 'var(--gold-dark)' }}>
@@ -211,7 +211,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="admin-content">
         {/* Share link banner */}
         <div
           className="wedding-card p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
@@ -234,12 +234,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="admin-tabs">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="flex items-center gap-2 font-inter text-sm px-4 py-2.5 rounded-xl transition-all"
+              className={`admin-tab ${tab === t.id ? 'active' : ''}`}
               style={{
                 background: tab === t.id ? 'var(--charcoal)' : 'white',
                 color: tab === t.id ? 'white' : 'var(--charcoal-muted)',
@@ -255,7 +255,7 @@ export default function AdminDashboard() {
         {/* Tab: Overview */}
         {tab === 'overview' && (
           <div style={{ animation: 'fadeInUp 0.5s ease-out' }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="stat-grid">
               <StatCard icon={<Users size={22} />} label="Familias" value={totalFamilies} color="linear-gradient(135deg, var(--gold), var(--gold-dark))" />
               <StatCard icon={<Check size={22} />} label="Total Confirmados" value={totalAttending} color="linear-gradient(135deg, var(--sage), #5a7d67)" />
               <StatCard icon={<Heart size={22} />} label="Lluvia de Sobres" value={willContribute} color="linear-gradient(135deg, var(--rose), #9A4A65)" />
@@ -448,11 +448,11 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-1 gap-6">
               {/* General */}
-              <div className="wedding-card p-6">
+              <div className="wedding-card setting-section">
                 <h3 className="font-display mb-4" style={{ fontSize: '1.1rem', color: 'var(--charcoal)' }}>
                   💍 Datos Generales
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="setting-grid">
                   <SettingField label="Nombre de la Novia" value={config.bride_name} onChange={v => setConfig(c => ({ ...c, bride_name: v }))} />
                   <SettingField label="Nombre del Novio" value={config.groom_name} onChange={v => setConfig(c => ({ ...c, groom_name: v }))} />
                   <SettingField label="Fecha de Boda" value={config.wedding_date} type="date" onChange={v => setConfig(c => ({ ...c, wedding_date: v }))} />
@@ -468,7 +468,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Bios */}
-              <div className="wedding-card p-6">
+              <div className="wedding-card setting-section">
                 <h3 className="font-display mb-4" style={{ fontSize: '1.1rem', color: 'var(--charcoal)' }}>
                   💕 Quiénes Somos
                 </h3>
@@ -480,12 +480,12 @@ export default function AdminDashboard() {
               </div>
 
               {/* Images */}
-              <div className="wedding-card p-6">
+              <div className="wedding-card setting-section">
                 <h3 className="font-display mb-4" style={{ fontSize: '1.1rem', color: 'var(--charcoal)' }}>
                   🖼️ Imágenes del Portal
                 </h3>
                 <p className="font-cormorant mb-4 text-sm italic" style={{ color: 'var(--charcoal-muted)' }}>
-                  Pega enlaces públicos de imágenes. Puedes usar Supabase Storage, Google Drive con enlace directo o una URL de imagen.
+                  Pega enlaces públicos de imágenes. Formatos recomendados: URL directa, .jpg, .jpeg o .png. El portal ya trae imágenes temporales en /public/images/wedding para mantener tamaños y formatos listos.
                 </p>
                 <div className="grid grid-cols-1 gap-4">
                   <SettingField label="Imagen principal / portada" value={config.hero_image_url} placeholder="https://..." onChange={v => setConfig(c => ({ ...c, hero_image_url: v }))} />
@@ -495,14 +495,14 @@ export default function AdminDashboard() {
               </div>
 
               {/* Bank / Lluvia de Sobres */}
-              <div className="wedding-card p-6" style={{ border: '2px solid var(--gold-light)' }}>
+              <div className="wedding-card setting-section" style={{ border: '2px solid var(--gold-light)' }}>
                 <h3 className="font-display mb-1" style={{ fontSize: '1.1rem', color: 'var(--charcoal)' }}>
                   💛 Lluvia de Sobres — Datos Bancarios
                 </h3>
                 <p className="font-cormorant mb-4 text-sm italic" style={{ color: 'var(--charcoal-muted)' }}>
                   Estos datos aparecerán en el formulario de confirmación de invitados.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="setting-grid">
                   <SettingField label="Banco" value={config.bank_name} placeholder="Ej: Banco Estado" onChange={v => setConfig(c => ({ ...c, bank_name: v }))} />
                   <SettingField label="Tipo de Cuenta" value={config.account_type} placeholder="Ej: Cuenta Vista" onChange={v => setConfig(c => ({ ...c, account_type: v }))} />
                   <SettingField label="Número de Cuenta" value={config.account_number} placeholder="Ej: 123-456-789" onChange={v => setConfig(c => ({ ...c, account_number: v }))} />
