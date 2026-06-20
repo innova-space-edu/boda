@@ -995,3 +995,175 @@ body {
   .groom-3d { width:78px; }
   @keyframes brideApproachMobile { 0% { transform:translateX(-210px) scale(.82); opacity:.7; } 100% { transform:translateX(8px) scale(1); opacity:1; } }
 }
+
+/* ---------- Ajuste final portada iglesia: invitación real + cielo lila animado ---------- */
+.baroque-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(235, 222, 255, .90), transparent 18rem),
+    radial-gradient(circle at 82% 16%, rgba(242, 211, 133, .45), transparent 23rem),
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, .88), transparent 24rem),
+    linear-gradient(125deg, #150b27 0%, #32164c 26%, #f7efff 52%, #fff8ed 74%, #28103c 100%);
+  background-size: 150% 150%, 140% 140%, 120% 120%, 240% 240%;
+  animation: weddingSkyShift 18s ease-in-out infinite alternate;
+}
+
+.baroque-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle, rgba(231, 207, 255, .98) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle, rgba(255, 246, 210, .92) 0 1.1px, transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,.72) 0 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(180, 125, 232, .55) 0 1.5px, transparent 2.4px);
+  background-size: 120px 120px, 190px 190px, 300px 300px, 420px 420px;
+  background-position: 0 0, 60px 90px, 120px 20px, 40px 160px;
+  animation: starDriftDeep 42s linear infinite;
+  opacity: .82;
+}
+
+.baroque-hero::after {
+  z-index: 1;
+  background:
+    radial-gradient(circle at 18% 26%, rgba(208, 170, 245, .30), transparent 20rem),
+    radial-gradient(circle at 85% 78%, rgba(242, 211, 133, .22), transparent 18rem),
+    linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.52) 48%, rgba(45,16,67,.28));
+  animation: veilGlow 9s ease-in-out infinite alternate;
+  opacity: 1;
+}
+
+.shooting-star {
+  z-index: 2;
+  width: 170px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.15) 12%, rgba(232,205,255,1) 45%, rgba(255,239,186,.95) 64%, transparent 100%);
+  box-shadow: 0 0 16px rgba(232,205,255,.9), 0 0 28px rgba(201,157,56,.45);
+  animation-name: shootingStarLong;
+}
+.shooting-star.s4 { top: 58%; left: 96%; animation-delay: 2.8s; animation-duration: 8.9s; }
+.shooting-star.s5 { top: 72%; left: 88%; animation-delay: 5.1s; animation-duration: 10.2s; }
+
+.baroque-stage {
+  grid-template-columns: minmax(300px, .72fr) minmax(320px, .55fr);
+  align-items: center;
+}
+
+.invitation-showcase {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+}
+
+.invitation-glow {
+  position: absolute;
+  inset: 8% 2% 4%;
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255,255,255,.75), transparent 42%),
+    radial-gradient(circle at 50% 65%, rgba(203, 158, 62, .28), transparent 46%),
+    radial-gradient(circle, rgba(206, 164, 255, .25), transparent 62%);
+  filter: blur(18px);
+  animation: invitationGlowPulse 5.8s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+.invitation-image-frame {
+  width: min(100%, 650px);
+  border-radius: 34px;
+  padding: clamp(7px, 1.2vw, 14px);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.9), rgba(243,224,166,.72), rgba(212,184,238,.55), rgba(255,255,255,.92));
+  box-shadow:
+    0 32px 90px rgba(27, 8, 45, .35),
+    0 0 0 1px rgba(255,255,255,.78),
+    inset 0 0 0 1px rgba(201,157,56,.28);
+  animation: invitationFloat 5.5s ease-in-out infinite;
+}
+
+.church-invitation-img {
+  width: 100%;
+  height: auto;
+  max-height: min(78vh, 940px);
+  object-fit: contain;
+  border-radius: 24px;
+  box-shadow: inset 0 0 0 1px rgba(201,157,56,.35);
+}
+
+.invitation-actions-panel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .8rem;
+  padding: .55rem;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, .72);
+  border: 1px solid rgba(201,157,56,.30);
+  box-shadow: 0 16px 42px rgba(27, 8, 45, .18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.btn-ghost.light {
+  background: rgba(255,255,255,.82);
+  color: var(--gold-deep);
+  border: 1px solid rgba(201,157,56,.32);
+}
+
+.baroque-side {
+  z-index: 4;
+}
+.baroque-side .side-photo-card,
+.baroque-side .ornate-panel {
+  background: rgba(255, 253, 248, .80);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(201,157,56,.30);
+  box-shadow: 0 24px 70px rgba(31, 9, 51, .16);
+}
+
+@keyframes weddingSkyShift {
+  0% { background-position: 0% 20%, 100% 0%, 50% 100%, 0% 50%; }
+  50% { background-position: 30% 10%, 70% 18%, 40% 88%, 65% 45%; }
+  100% { background-position: 100% 48%, 20% 8%, 55% 100%, 100% 52%; }
+}
+@keyframes starDriftDeep {
+  from { background-position: 0 0, 60px 90px, 120px 20px, 40px 160px; }
+  to { background-position: 360px 260px, -230px 430px, 520px -180px, -360px 300px; }
+}
+@keyframes shootingStarLong {
+  0%, 68% { opacity: 0; transform: translateX(0) translateY(0) rotate(-22deg) scaleX(.78); }
+  73% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-760px) translateY(250px) rotate(-22deg) scaleX(1.05); }
+}
+@keyframes veilGlow {
+  from { opacity: .72; filter: saturate(1); }
+  to { opacity: 1; filter: saturate(1.25); }
+}
+@keyframes invitationFloat {
+  0%,100% { transform: translateY(0) rotateX(0deg); }
+  50% { transform: translateY(-10px) rotateX(1deg); }
+}
+@keyframes invitationGlowPulse {
+  from { opacity: .65; transform: scale(.98); }
+  to { opacity: 1; transform: scale(1.04); }
+}
+
+@media (max-width: 980px) {
+  .baroque-stage { grid-template-columns: 1fr; }
+  .church-invitation-img { max-height: none; }
+  .invitation-image-frame { width: min(100%, 520px); }
+}
+
+@media (max-width: 640px) {
+  .baroque-hero { padding-top: 86px; }
+  .invitation-actions-panel { border-radius: 24px; width: min(100%, 420px); }
+  .invitation-actions-panel .btn-gold,
+  .invitation-actions-panel .btn-ghost { width: 100%; }
+  .invitation-image-frame { border-radius: 24px; padding: 7px; }
+  .church-invitation-img { border-radius: 18px; }
+}

@@ -1,9 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { CalendarDays, Clock, MapPin, MessageCircle, Navigation, Sparkles } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, MessageCircle, Navigation } from 'lucide-react'
 import Countdown from './Countdown'
 import type { WeddingConfig } from '@/types'
-import { formatWeddingDate } from '@/lib/wedding'
 
 const WHATSAPP_1 = '56926301822'
 const WHATSAPP_2 = '56988215400'
@@ -36,8 +35,6 @@ function MiniCalendar() {
 }
 
 export default function HeroSection({ config }: { config: WeddingConfig }) {
-  const brideName = config.bride_name.split(' ')[0]
-  const groomName = config.groom_name.split(' ')[0]
   const mapQuery = `${config.venue_name}, ${config.venue_address}, ${config.city}`
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
   const whatsappText = encodeURIComponent('Hola, tengo una consulta sobre la boda de Carolina y Esthefano.')
@@ -47,53 +44,25 @@ export default function HeroSection({ config }: { config: WeddingConfig }) {
       <span className="shooting-star" style={{ top: '11%', left: '90%' }} />
       <span className="shooting-star s2" />
       <span className="shooting-star s3" />
+      <span className="shooting-star s4" />
+      <span className="shooting-star s5" />
       <span className="floating-orb orb-lilac" />
       <span className="floating-orb orb-gold" />
 
       <div className="baroque-stage">
-        <article className="baroque-card" aria-label="Invitación digital de boda religiosa">
-          <div className="ornate-frame" />
-          <div className="ornate-corner ornate-corner-tl" />
-          <div className="ornate-corner ornate-corner-tr" />
-          <div className="ornate-corner ornate-corner-bl" />
-          <div className="ornate-corner ornate-corner-br" />
-
-          <div className="monogram-wrap">
-            <div className="monogram-ring">
-              <span>C</span><span>E</span>
-            </div>
+        <article className="invitation-showcase" aria-label="Invitación digital de boda religiosa">
+          <div className="invitation-glow" aria-hidden="true" />
+          <div className="invitation-image-frame">
+            <img
+              src="/images/wedding/invitacion-iglesia-editada.png"
+              alt="Invitación de iglesia de Carolina Vega Carrera y Esthefano Morales Campaña, 6 de febrero de 2027"
+              className="church-invitation-img"
+            />
           </div>
 
-          <p className="invitation-kicker">Con mucho amor, queremos que formes parte</p>
-          <p className="invitation-subkicker">de este momento tan especial ante Dios</p>
-
-          <h1 className="names-metallic" aria-label={`${brideName} y ${groomName}`}>
-            <span>{brideName}</span>
-            <em>y</em>
-            <span>{groomName}</span>
-          </h1>
-
-          <div className="surname-line">
-            <span>Vega Carrera</span>
-            <i />
-            <span>Morales Campaña</span>
-          </div>
-
-          <div className="baroque-divider"><Sparkles size={16} /></div>
-
-          <p className="church-invite-copy">
-            {config.hero_message || 'Con la bendición de Dios y el amor de nuestras familias, queremos compartir contigo el inicio de nuestra nueva vida juntos.'}
-          </p>
-
-          <div className="date-luxury">
-            <span>{formatWeddingDate(config.wedding_date).replace(',', '')}</span>
-            <strong>{config.ceremony_time} hrs</strong>
-            <span>{config.venue_name}</span>
-          </div>
-
-          <div className="hero-actions ornate-actions">
+          <div className="invitation-actions-panel" aria-label="Acciones principales de la invitación">
             <Link href="/confirmar" className="btn-gold">💌 Confirmar asistencia</Link>
-            <a href={mapsUrl} className="btn-ghost" target="_blank" rel="noreferrer"><Navigation size={16} /> Ver ubicación</a>
+            <a href={mapsUrl} className="btn-ghost light" target="_blank" rel="noreferrer"><Navigation size={16} /> Ver ubicación</a>
           </div>
         </article>
 
