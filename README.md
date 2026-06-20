@@ -93,3 +93,22 @@ npm run dev
 - La carpeta `out` no se crea manualmente; se genera durante el build.
 - El mapa usa Google Maps mediante iframe y link de búsqueda.
 - Los botones de WhatsApp usan enlaces `wa.me` con código de país de Chile.
+
+## Rediseño iglesia — versión barroca lila/dorado
+
+Esta versión cambia la estética completa hacia una invitación religiosa más elegante, inspirada en tarjetas clásicas con letras cursivas antiguas, relieves dorados/plateados, fondo claro lila/blanco y detalles florales.
+
+Incluye:
+
+- Portada digital estilo tarjeta de invitación vertical.
+- Tipografía cursiva ornamental para los nombres de los novios.
+- Tonos blanco, dorado, lila y plateado.
+- Animación inicial mejorada: la novia camina hacia la iglesia y el novio espera en la puerta.
+- Fondo con estrellas lilas y estrellas fugaces.
+- Calendario de febrero 2027 con corazón lila en el día 6.
+- Mapa embebido de la Catedral de Antofagasta y botón para abrir Google Maps.
+- Botones WhatsApp para 926301822 y 988215400.
+- Sección de lluvia de sobres con botón “Ver datos de transferencia” solo cuando el invitado marca que desea considerar aporte monetario.
+- Imágenes temporales de boda en `public/images/wedding/`, reemplazables por archivos `.jpg`, `.jpeg`, `.png` o por URL pública desde el panel administrador.
+
+> Nota: las imágenes actuales son placeholders de temática boda lila/dorado. Puedes reemplazarlas manteniendo los mismos nombres de archivo para conservar tamaños y formatos.

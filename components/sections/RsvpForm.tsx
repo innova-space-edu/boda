@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { Heart, Plus, Send, Trash2 } from 'lucide-react'
+import { Banknote, Eye, Heart, Plus, Send, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { formatWeddingDate } from '@/lib/wedding'
@@ -13,26 +13,27 @@ function EnvelopeAnimation({ onOpen, brideName, groomName, weddingDate }: { onOp
   const [opening, setOpening] = useState(false)
   const handleOpen = () => {
     setOpening(true)
-    setTimeout(onOpen, 1600)
+    setTimeout(onOpen, 1650)
   }
 
   return (
-    <div className="envelope-stage">
+    <div className="envelope-stage ornate-envelope-stage">
       <div>
-        <div className={`envelope-box ${opening ? 'open' : ''}`} onClick={handleOpen} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleOpen()}>
-          <div className="envelope-letter">
-            <p className="section-label" style={{ margin: 0, letterSpacing: '.22em' }}>Invitación</p>
-            <h2 className="font-script" style={{ fontSize: '3rem', color: 'var(--lilac-dark)', margin: '.5rem 0 0' }}>{brideName} & {groomName}</h2>
-            <p style={{ color: 'var(--gold-dark)', margin: '.6rem 0 0' }}>{formatWeddingDate(weddingDate)}</p>
+        <div className={`envelope-box ornate-envelope ${opening ? 'open' : ''}`} onClick={handleOpen} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleOpen()}>
+          <div className="envelope-letter ornate-letter">
+            <div className="mini-ornate-frame" />
+            <p className="section-label" style={{ margin: 0, letterSpacing: '.24em' }}>Invitación</p>
+            <h2 className="font-script" style={{ fontSize: '3.45rem', color: 'var(--gold-dark)', margin: '.55rem 0 0', lineHeight: .9 }}>{brideName} & {groomName}</h2>
+            <p style={{ color: 'var(--gold-dark)', margin: '.75rem 0 0', fontFamily: 'Cinzel', letterSpacing: '.12em' }}>{formatWeddingDate(weddingDate)}</p>
             <div className="gold-divider" style={{ margin: '1rem auto' }}><Heart size={16} fill="var(--lilac-dark)" color="var(--lilac-dark)" /></div>
-            <p style={{ color: 'var(--muted)', fontStyle: 'italic', margin: 0 }}>Gracias por acompañarnos en este momento tan especial.</p>
+            <p style={{ color: 'var(--muted)', fontStyle: 'italic', margin: 0 }}>Confirma tu asistencia para acompañarnos en la iglesia.</p>
           </div>
           <div className="envelope-lid" />
           <div className="envelope-body" />
           <div className="envelope-seal"><Heart size={26} fill="currentColor" /></div>
         </div>
-        <p style={{ color: 'rgba(255,250,241,.78)', textAlign: 'center', marginTop: 32, fontFamily: 'Cinzel', letterSpacing: '.18em', fontSize: '.75rem', textTransform: 'uppercase' }}>
-          {opening ? 'Abriendo invitación...' : 'Haz clic para abrir el sobre'}
+        <p className="open-envelope-text">
+          {opening ? 'Abriendo carta...' : 'Haz clic para abrir el sobre'}
         </p>
         {!opening && <button className="btn-gold" onClick={handleOpen} style={{ margin: '18px auto 0', display: 'flex' }}>Abrir invitación</button>}
       </div>
@@ -50,10 +51,12 @@ export default function RsvpForm({ config }: RsvpFormProps) {
   const [dietary, setDietary] = useState('')
   const [members, setMembers] = useState<RsvpMember[]>([{ name: '', attending: true }])
   const [willContribute, setWillContribute] = useState(false)
+  const [showBankData, setShowBankData] = useState(false)
   const [envelopeMessage, setEnvelopeMessage] = useState('')
 
   const brideName = config.bride_name.split(' ')[0]
   const groomName = config.groom_name.split(' ')[0]
+  const hasBankData = Boolean(config.bank_name || config.account_number || config.account_holder || config.account_type || config.account_rut || config.bank_email)
 
   const addMember = () => {
     if (members.length < 12) setMembers([...members, { name: '', attending: true }])
@@ -102,7 +105,7 @@ export default function RsvpForm({ config }: RsvpFormProps) {
 
   if (submitted) {
     return (
-      <div className="lux-card rsvp-card" style={{ textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div className="lux-card rsvp-card ornate-form-card" style={{ textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <img src="/images/wedding/bridal-bouquet.jpeg" alt="Flores de boda" style={{ width: 150, height: 150, objectFit: 'cover', borderRadius: '999px', margin: '0 auto 18px', border: '6px solid rgba(200,167,232,.25)' }} />
         <h2 className="rsvp-title">¡Gracias!</h2>
         <p className="section-copy" style={{ maxWidth: 600, margin: '0 auto 1.5rem' }}>
@@ -114,7 +117,7 @@ export default function RsvpForm({ config }: RsvpFormProps) {
   }
 
   return (
-    <div className="lux-card rsvp-card">
+    <div className="lux-card rsvp-card ornate-form-card">
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <p className="section-label">Confirmación</p>
         <h2 className="rsvp-title">¿Vendrás?</h2>
@@ -165,25 +168,46 @@ export default function RsvpForm({ config }: RsvpFormProps) {
           <textarea className="textarea-lux" value={dietary} onChange={e => setDietary(e.target.value)} placeholder="Ej: vegetariano, alergia, adulto mayor, silla de ruedas, etc." />
         </div>
 
-        <div className="envelope-note">
+        <div className={`envelope-note gift-note ${willContribute ? 'active' : ''}`}>
           <h3 className="font-display" style={{ margin: '0 0 .5rem', fontSize: '1.45rem' }}>💛 Lluvia de sobres</h3>
           <p style={{ color: 'var(--muted)', lineHeight: 1.65, margin: 0 }}>
-            Nuestro mejor regalo será contar con tu presencia. Si deseas regalarnos algo, agradeceremos una contribución monetaria voluntaria en nuestra lluvia de sobres. El monto es completamente libre.
+            Nuestro mejor regalo será contar con tu presencia. Si deseas regalarnos algo, agradeceremos una contribución monetaria voluntaria. El monto es completamente libre.
           </p>
-          {(config.bank_name || config.account_number || config.account_holder) && (
-            <div className="bank-grid">
-              {config.bank_name && <div className="bank-item"><small>Banco</small><strong>{config.bank_name}</strong></div>}
-              {config.account_type && <div className="bank-item"><small>Tipo de cuenta</small><strong>{config.account_type}</strong></div>}
-              {config.account_number && <div className="bank-item"><small>Número</small><strong>{config.account_number}</strong></div>}
-              {config.account_holder && <div className="bank-item"><small>Titular</small><strong>{config.account_holder}</strong></div>}
-              {config.account_rut && <div className="bank-item"><small>RUT</small><strong>{config.account_rut}</strong></div>}
-              {config.bank_email && <div className="bank-item"><small>Email</small><strong>{config.bank_email}</strong></div>}
-            </div>
-          )}
-          <label className="switch-pill" style={{ marginTop: 16 }}>
-            <input type="checkbox" checked={willContribute} onChange={e => setWillContribute(e.target.checked)} />
-            Quiero considerar lluvia de sobres
+          <label className="switch-pill gift-choice" style={{ marginTop: 16 }}>
+            <input
+              type="checkbox"
+              checked={willContribute}
+              onChange={e => {
+                setWillContribute(e.target.checked)
+                if (!e.target.checked) setShowBankData(false)
+              }}
+            />
+            Deseo considerar un aporte monetario voluntario
           </label>
+
+          {willContribute && (
+            <button type="button" className="btn-lilac" onClick={() => setShowBankData(v => !v)} style={{ marginTop: 14 }}>
+              {showBankData ? <Eye size={16} /> : <Banknote size={16} />}
+              {showBankData ? 'Ocultar datos de transferencia' : 'Ver datos de transferencia'}
+            </button>
+          )}
+
+          {willContribute && showBankData && (
+            hasBankData ? (
+              <div className="bank-grid bank-grid-reveal">
+                {config.bank_name && <div className="bank-item"><small>Banco</small><strong>{config.bank_name}</strong></div>}
+                {config.account_type && <div className="bank-item"><small>Tipo de cuenta</small><strong>{config.account_type}</strong></div>}
+                {config.account_number && <div className="bank-item"><small>Número</small><strong>{config.account_number}</strong></div>}
+                {config.account_holder && <div className="bank-item"><small>Titular</small><strong>{config.account_holder}</strong></div>}
+                {config.account_rut && <div className="bank-item"><small>RUT</small><strong>{config.account_rut}</strong></div>}
+                {config.bank_email && <div className="bank-item"><small>Email</small><strong>{config.bank_email}</strong></div>}
+              </div>
+            ) : (
+              <div className="bank-placeholder">
+                Los datos de transferencia serán agregados por los novios más adelante desde el panel administrador.
+              </div>
+            )
+          )}
         </div>
 
         <div>

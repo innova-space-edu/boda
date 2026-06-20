@@ -4,55 +4,79 @@ import { useEffect, useState } from 'react'
 interface IntroScreenProps { onComplete: () => void }
 
 function Petal({ style }: { style: React.CSSProperties }) {
-  return <span style={{ position: 'absolute', width: 12, height: 12, borderRadius: '70% 10% 70% 10%', background: 'linear-gradient(135deg, #fff, #c8a7e8)', opacity: .75, ...style }} />
+  return <span className="intro-petal" style={style} />
 }
 
-function Bride() {
+function Bride3D() {
   return (
-    <svg viewBox="0 0 120 190" width="118" height="190" aria-label="Novia animada">
+    <svg className="character-svg bride-3d" viewBox="0 0 150 230" aria-label="Novia caminando hacia el novio">
       <defs>
-        <linearGradient id="dressIntro" x1="0" x2="1">
-          <stop offset="0" stopColor="#fff" />
-          <stop offset=".55" stopColor="#fff7ee" />
-          <stop offset="1" stopColor="#efe0ff" />
+        <linearGradient id="brideSkin" x1="0" x2="1">
+          <stop offset="0" stopColor="#f7d5b7" />
+          <stop offset="1" stopColor="#d49b75" />
         </linearGradient>
-        <linearGradient id="bouquetIntro" x1="0" x2="1">
-          <stop offset="0" stopColor="#fff" />
-          <stop offset="1" stopColor="#c8a7e8" />
+        <linearGradient id="brideDress" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset=".48" stopColor="#fff8ef" />
+          <stop offset="1" stopColor="#e9dafc" />
         </linearGradient>
+        <radialGradient id="brideGlow" cx="45%" cy="25%" r="80%">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="1" />
+          <stop offset="1" stopColor="#d6c0ee" stopOpacity=".15" />
+        </radialGradient>
+        <filter id="charShadow" x="-40%" y="-20%" width="180%" height="150%">
+          <feDropShadow dx="0" dy="10" stdDeviation="6" floodColor="#000" floodOpacity=".28" />
+        </filter>
       </defs>
-      <path d="M58 23 C38 22 28 45 31 72 C34 97 20 121 16 168 C40 181 80 181 104 168 C96 120 88 96 90 70 C92 43 78 24 58 23Z" fill="rgba(255,255,255,.40)" />
-      <path d="M42 31 C48 14 78 15 85 32 C77 24 52 24 42 31Z" fill="#6b4a2e" />
-      <circle cx="63" cy="43" r="16" fill="#f2caa5" />
-      <path d="M47 40 C52 24 75 23 82 40 C73 35 57 34 47 40Z" fill="#6b4a2e" />
-      <circle cx="52" cy="24" r="5" fill="#fff" /><circle cx="61" cy="20" r="4" fill="#e8d5ff" /><circle cx="70" cy="23" r="5" fill="#fff" />
-      <path d="M49 63 C57 58 70 58 78 63 L82 94 C70 101 55 101 43 94Z" fill="url(#dressIntro)" style={{ animation: 'dressFlow .9s ease-in-out infinite' }} />
-      <path d="M43 92 C29 115 21 143 17 176 C46 187 79 187 108 176 C103 143 95 115 82 92 C72 100 53 100 43 92Z" fill="url(#dressIntro)" style={{ animation: 'dressFlow .9s ease-in-out infinite' }} />
-      <path d="M19 164 C6 170 0 181 3 190 C21 188 34 181 45 174" fill="rgba(255,255,255,.68)" />
-      <path d="M47 70 C33 75 28 86 29 96" stroke="#f2caa5" strokeWidth="7" strokeLinecap="round" fill="none" style={{ animation: 'armSwing .8s ease-in-out infinite' }} />
-      <path d="M78 70 C91 76 95 87 92 98" stroke="#f2caa5" strokeWidth="7" strokeLinecap="round" fill="none" style={{ animation: 'armSwing .8s ease-in-out infinite reverse' }} />
-      <g transform="translate(88 94)">
-        <circle cx="0" cy="0" r="9" fill="url(#bouquetIntro)" /><circle cx="-7" cy="-3" r="6" fill="#fff" /><circle cx="7" cy="-4" r="6" fill="#c8a7e8" /><circle cx="0" cy="7" r="5" fill="#d9a6bb" />
-        <path d="M0 10 L-4 24 M1 10 L5 24" stroke="#526b4b" strokeWidth="2" />
+      <g filter="url(#charShadow)">
+        <path className="veil-animated" d="M73 20 C42 28 28 72 38 112 C46 149 28 181 9 214 C47 222 105 222 139 213 C113 180 102 150 108 113 C116 68 103 30 73 20Z" fill="url(#brideGlow)" opacity=".72" />
+        <path d="M48 40 C54 16 94 15 101 42 C88 32 61 32 48 40Z" fill="#7b5539" />
+        <circle cx="76" cy="55" r="19" fill="url(#brideSkin)" />
+        <path d="M54 52 C58 30 92 27 101 53 C87 45 66 44 54 52Z" fill="#6b4a2e" />
+        <circle cx="60" cy="31" r="6" fill="#fff" /><circle cx="71" cy="25" r="5" fill="#e7d4ff" /><circle cx="83" cy="28" r="6" fill="#fff" /><circle cx="94" cy="35" r="5" fill="#f4e3c1" />
+        <path className="dress-sway" d="M57 80 C67 71 87 71 97 80 L105 120 C91 130 65 130 50 120Z" fill="url(#brideDress)" />
+        <path className="dress-sway" d="M51 117 C33 144 22 178 16 220 C55 232 100 232 138 220 C130 178 118 144 101 117 C88 128 65 128 51 117Z" fill="url(#brideDress)" />
+        <path d="M22 203 C7 207 -1 218 3 229 C26 226 45 218 60 208" fill="rgba(255,255,255,.62)" />
+        <path className="bride-arm arm-left" d="M55 88 C36 98 31 116 35 130" stroke="url(#brideSkin)" strokeWidth="8" strokeLinecap="round" fill="none" />
+        <path className="bride-arm arm-right" d="M96 88 C115 98 119 116 113 130" stroke="url(#brideSkin)" strokeWidth="8" strokeLinecap="round" fill="none" />
+        <g transform="translate(116 126)">
+          <circle cx="0" cy="0" r="10" fill="#d8c0f4" /><circle cx="-8" cy="-3" r="7" fill="#fff" /><circle cx="8" cy="-5" r="7" fill="#c8a7e8" /><circle cx="0" cy="8" r="6" fill="#d9a6bb" />
+          <path d="M0 11 L-4 31 M2 11 L8 31" stroke="#526b4b" strokeWidth="2.4" />
+        </g>
+        <path className="bride-leg leg-left" d="M62 215 C60 222 58 227 56 232" stroke="url(#brideSkin)" strokeWidth="7" strokeLinecap="round" />
+        <path className="bride-leg leg-right" d="M94 215 C97 222 99 227 101 232" stroke="url(#brideSkin)" strokeWidth="7" strokeLinecap="round" />
+        <ellipse cx="55" cy="230" rx="9" ry="4" fill="#c7a15a" /><ellipse cx="103" cy="230" rx="9" ry="4" fill="#c7a15a" />
       </g>
-      <path d="M51 173 C49 180 48 185 47 190" stroke="#f2caa5" strokeWidth="5" strokeLinecap="round" style={{ animation: 'legSwing .65s ease-in-out infinite' }} />
-      <path d="M76 173 C78 180 79 185 80 190" stroke="#f2caa5" strokeWidth="5" strokeLinecap="round" style={{ animation: 'legSwing .65s ease-in-out infinite reverse' }} />
-      <ellipse cx="47" cy="188" rx="7" ry="3" fill="#c7a15a" /><ellipse cx="81" cy="188" rx="7" ry="3" fill="#c7a15a" />
     </svg>
   )
 }
 
-function Groom() {
+function Groom3D() {
   return (
-    <svg viewBox="0 0 90 160" width="90" height="160" aria-label="Novio esperando">
-      <circle cx="45" cy="24" r="14" fill="#f2caa5" />
-      <path d="M30 23 C36 8 59 8 65 24 C55 18 41 18 30 23Z" fill="#3a2a22" />
-      <path d="M28 45 L62 45 L70 140 L20 140Z" fill="#111" />
-      <path d="M40 46 L50 46 L55 138 L35 138Z" fill="#f5efe6" />
-      <path d="M45 52 L38 66 L45 72 L52 66Z" fill="#c7a15a" />
-      <path d="M26 54 C16 72 14 92 18 112" stroke="#111" strokeWidth="9" strokeLinecap="round" fill="none" />
-      <path d="M64 54 C75 73 77 93 72 112" stroke="#111" strokeWidth="9" strokeLinecap="round" fill="none" />
-      <path d="M34 140 L32 158 M56 140 L58 158" stroke="#111" strokeWidth="9" strokeLinecap="round" />
+    <svg className="character-svg groom-3d" viewBox="0 0 130 230" aria-label="Novio esperando en la puerta de la iglesia">
+      <defs>
+        <linearGradient id="groomSuit" x1="0" x2="1">
+          <stop offset="0" stopColor="#050505" />
+          <stop offset=".5" stopColor="#1d1a19" />
+          <stop offset="1" stopColor="#000" />
+        </linearGradient>
+        <linearGradient id="groomSkin" x1="0" x2="1">
+          <stop offset="0" stopColor="#f1c19b" />
+          <stop offset="1" stopColor="#c4825d" />
+        </linearGradient>
+      </defs>
+      <g filter="url(#charShadow)">
+        <circle cx="65" cy="45" r="20" fill="url(#groomSkin)" />
+        <path d="M41 44 C48 19 82 16 91 45 C76 35 56 34 41 44Z" fill="#2c211d" />
+        <path d="M39 75 L91 75 L104 205 L26 205Z" fill="url(#groomSuit)" />
+        <path d="M56 77 L74 77 L81 202 L49 202Z" fill="#fffaf1" />
+        <path d="M65 87 L55 105 L65 114 L75 105Z" fill="#c7a15a" />
+        <path d="M38 88 C23 112 20 142 24 164" stroke="#0a0909" strokeWidth="12" strokeLinecap="round" fill="none" />
+        <path d="M92 88 C108 112 111 142 106 164" stroke="#0a0909" strokeWidth="12" strokeLinecap="round" fill="none" />
+        <path d="M48 205 L45 229 M82 205 L85 229" stroke="#0a0909" strokeWidth="12" strokeLinecap="round" />
+        <ellipse cx="45" cy="229" rx="12" ry="4" fill="#070707" /><ellipse cx="86" cy="229" rx="12" ry="4" fill="#070707" />
+        <circle cx="88" cy="84" r="5" fill="#c8a7e8" />
+      </g>
     </svg>
   )
 }
@@ -62,59 +86,56 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    const interval = setInterval(() => setProgress(p => Math.min(100, p + 1.15)), 42)
+    const interval = setInterval(() => setProgress(p => Math.min(100, p + 0.95)), 42)
     const timer = setTimeout(() => {
       setPhase('fade')
-      setTimeout(onComplete, 850)
-    }, 4800)
+      setTimeout(onComplete, 900)
+    }, 5600)
     return () => { clearInterval(interval); clearTimeout(timer) }
   }, [onComplete])
 
-  const petals = Array.from({ length: 22 }, (_, i) => ({ left: `${(i * 9 + 4) % 100}%`, animationDelay: `${i * .25}s`, animationDuration: `${4 + (i % 4) * .35}s` }))
+  const petals = Array.from({ length: 30 }, (_, i) => ({
+    left: `${(i * 7 + 3) % 100}%`,
+    animationDelay: `${i * .18}s`,
+    animationDuration: `${4.3 + (i % 5) * .32}s`,
+  }))
 
   return (
-    <div className="intro-scene starfield" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(180deg, #08050d 0%, #1b0f24 38%, #271b17 70%, #0b0a09 100%)', animation: phase === 'fade' ? 'introFadeOut .85s ease forwards' : undefined }}>
-      <span className="shooting-star" style={{ top: '16%', left: '84%' }} />
+    <div className={`intro-scene intro-luxury starfield ${phase === 'fade' ? 'intro-out' : ''}`}>
+      <span className="shooting-star" style={{ top: '12%', left: '88%' }} />
       <span className="shooting-star s2" />
       <span className="shooting-star s3" />
+      <span className="intro-moon" />
+      <span className="intro-aurora intro-aurora-left" />
+      <span className="intro-aurora intro-aurora-right" />
 
-      <div style={{ position: 'absolute', top: '10%', right: '12%', width: 86, height: 86, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #fff9d8, #d9bd74 62%, #9b7132)', boxShadow: '0 0 60px rgba(234,211,154,.45)' }} />
-
-      <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMax slice" style={{ position: 'absolute', inset: 'auto 0 72px', width: '100%', height: '68%', opacity: .95 }}>
-        <defs>
-          <linearGradient id="churchGlow" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="#2a1916" />
-            <stop offset="1" stopColor="#070505" />
-          </linearGradient>
-        </defs>
-        <path d="M0 500 H1000 V520 H0Z" fill="#090707" />
-        <path d="M370 500 V252 H420 V160 L455 132 L490 160 V252 H535 V500Z" fill="url(#churchGlow)" />
-        <path d="M451 128 V76 H463 V128 M431 100 H483 V112 H431Z" fill="#7d5722" opacity=".7" />
-        <path d="M220 500 V325 H350 V500Z M555 500 V325 H720 V500Z" fill="#160f0d" />
-        <path d="M273 325 V275 H318 V325 M625 325 V275 H670 V325" fill="#19100e" />
-        <path d="M443 250 C455 230 479 230 491 250 V285 H443Z" fill="#090606" opacity=".78" />
-        <path d="M420 500 C430 420 480 420 535 500Z" fill="#120b0a" />
-        <path d="M0 520 C210 480 790 480 1000 520Z" fill="rgba(199,161,90,.12)" />
-      </svg>
-
-      <div style={{ position: 'absolute', left: '50%', bottom: 72, transform: 'translateX(-50%)', width: 'min(500px, 52vw)', height: 210, background: 'linear-gradient(180deg, rgba(199,161,90,.10), rgba(255,250,241,.03))', clipPath: 'polygon(42% 0, 58% 0, 100% 100%, 0 100%)', borderLeft: '1px solid rgba(199,161,90,.16)', borderRight: '1px solid rgba(199,161,90,.16)' }} />
-
-      {petals.map((p, i) => <Petal key={i} style={{ left: p.left, top: -20, animation: `petalFall ${p.animationDuration} linear ${p.animationDelay} infinite` }} />)}
-
-      <div style={{ position: 'absolute', bottom: 168, left: '50%', transform: 'translateX(152px)', zIndex: 4 }}><Groom /></div>
-      <div style={{ position: 'absolute', bottom: 132, left: '50%', transform: 'translateX(-50%)', zIndex: 5, animation: 'brideWalk 4.6s cubic-bezier(.35,.02,.2,1) forwards' }}><Bride /></div>
-
-      <div style={{ position: 'absolute', inset: '12% 20px auto', textAlign: 'center', zIndex: 6 }}>
-        <p className="font-cinzel" style={{ margin: '0 0 .4rem', color: 'rgba(234,211,154,.76)', letterSpacing: '.36em', textTransform: 'uppercase', fontSize: 'clamp(.74rem, 2vw, 1rem)' }}>Abriendo el portal de</p>
-        <h1 className="font-script" style={{ margin: 0, color: '#f7efe4', fontSize: 'clamp(3.4rem, 10vw, 7.2rem)', fontWeight: 400, lineHeight: .9, textShadow: '0 12px 48px rgba(0,0,0,.45)' }}>Carolina & Esthefano</h1>
-        <p className="font-cormorant" style={{ color: 'rgba(255,250,241,.72)', fontStyle: 'italic', fontSize: '1.2rem' }}>La novia camina hacia la iglesia, donde la espera el novio.</p>
+      <div className="intro-title-block">
+        <p>Invitación religiosa</p>
+        <h1>Carolina & Esthefano</h1>
+        <span>La novia llega a la iglesia donde la espera el novio</span>
       </div>
 
-      <div style={{ position: 'absolute', left: '50%', bottom: 38, transform: 'translateX(-50%)', width: 'min(580px, 72vw)', zIndex: 7 }}>
-        <div style={{ height: 2, background: 'rgba(255,255,255,.13)', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', background: 'linear-gradient(90deg, var(--lilac), var(--gold))', transition: 'width .12s linear' }} />
+      <div className="cathedral-stage" aria-hidden="true">
+        <div className="cathedral-skyline">
+          <div className="cathedral-side left" />
+          <div className="cathedral-main">
+            <div className="cathedral-cross" />
+            <div className="cathedral-window" />
+            <div className="cathedral-door" />
+          </div>
+          <div className="cathedral-side right" />
         </div>
-        <p className="font-cinzel" style={{ textAlign: 'center', color: 'rgba(234,211,154,.78)', letterSpacing: '.28em', fontSize: '.72rem', marginTop: 14 }}>Entrando a la invitación...</p>
+        <div className="church-light" />
+        <div className="aisle-runway" />
+        <div className="groom-position"><Groom3D /></div>
+        <div className="bride-position"><Bride3D /></div>
+      </div>
+
+      {petals.map((p, i) => <Petal key={i} style={{ left: p.left, top: -30, animationDelay: p.animationDelay, animationDuration: p.animationDuration }} />)}
+
+      <div className="intro-progress">
+        <div className="intro-progress-track"><div style={{ width: `${progress}%` }} /></div>
+        <p>Abriendo la invitación...</p>
       </div>
     </div>
   )

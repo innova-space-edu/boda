@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Calendar, Clock, MapPin, MessageCircle, Navigation, Sparkles } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, MessageCircle, Navigation, Sparkles } from 'lucide-react'
 import Countdown from './Countdown'
 import type { WeddingConfig } from '@/types'
 import { formatWeddingDate } from '@/lib/wedding'
@@ -12,10 +12,10 @@ function MiniCalendar() {
   const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
   const cells = ['', '', '', '', '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28']
   return (
-    <table className="calendar-mini" aria-label="Calendario febrero 2027">
+    <table className="calendar-mini calendar-ornate" aria-label="Calendario febrero 2027">
       <caption>Febrero 2027</caption>
       <thead>
-        <tr>{days.map(d => <th key={d}>{d}</th>)}</tr>
+        <tr>{days.map((d, i) => <th key={`${d}-${i}`}>{d}</th>)}</tr>
       </thead>
       <tbody>
         {Array.from({ length: 5 }).map((_, row) => (
@@ -43,75 +43,96 @@ export default function HeroSection({ config }: { config: WeddingConfig }) {
   const whatsappText = encodeURIComponent('Hola, tengo una consulta sobre la boda de Carolina y Esthefano.')
 
   return (
-    <section className="lux-hero starfield" id="inicio">
-      <span className="shooting-star" style={{ top: '13%', left: '78%' }} />
+    <section className="baroque-hero starfield" id="inicio">
+      <span className="shooting-star" style={{ top: '11%', left: '90%' }} />
       <span className="shooting-star s2" />
       <span className="shooting-star s3" />
+      <span className="floating-orb orb-lilac" />
+      <span className="floating-orb orb-gold" />
 
-      <div className="invitation-stage">
-        <article
-          className="invitation-card"
-          style={{
-            backgroundImage: config.hero_image_url
-              ? `linear-gradient(180deg, rgba(255,255,255,.94), rgba(255,250,241,.96)), url(${config.hero_image_url})`
-              : undefined,
-          }}
-        >
-          <div className="invitation-border" />
-          <div className="invitation-content">
-            <p className="kicker">Con amor y alegría te invitamos</p>
-            <h1 className="hero-names">
-              {brideName}
-              <span className="hero-amp">&</span>
-              {groomName}
-            </h1>
+      <div className="baroque-stage">
+        <article className="baroque-card" aria-label="Invitación digital de boda religiosa">
+          <div className="ornate-frame" />
+          <div className="ornate-corner ornate-corner-tl" />
+          <div className="ornate-corner ornate-corner-tr" />
+          <div className="ornate-corner ornate-corner-bl" />
+          <div className="ornate-corner ornate-corner-br" />
 
-            <div className="gold-divider"><Sparkles size={18} color="var(--gold-dark)" /></div>
-
-            <p className="hero-message">
-              {config.hero_message || '¡Nos casamos! Únete a nosotros en el día más especial de nuestras vidas.'}
-            </p>
-
-            <div className="hero-date-line">
-              <span><Calendar size={16} style={{ display: 'inline', marginRight: 6 }} />{formatWeddingDate(config.wedding_date)}</span>
-              <span>•</span>
-              <span><Clock size={16} style={{ display: 'inline', marginRight: 6 }} />{config.ceremony_time} hrs</span>
-              <span>•</span>
-              <span><MapPin size={16} style={{ display: 'inline', marginRight: 6 }} />{config.venue_name}</span>
+          <div className="monogram-wrap">
+            <div className="monogram-ring">
+              <span>C</span><span>E</span>
             </div>
+          </div>
 
-            <div className="hero-actions">
-              <Link href="/confirmar" className="btn-gold">💌 Confirmar asistencia</Link>
-              <a href={mapsUrl} className="btn-ghost" target="_blank" rel="noreferrer"><Navigation size={16} /> Ver ubicación</a>
-            </div>
+          <p className="invitation-kicker">Con mucho amor, queremos que formes parte</p>
+          <p className="invitation-subkicker">de este momento tan especial ante Dios</p>
+
+          <h1 className="names-metallic" aria-label={`${brideName} y ${groomName}`}>
+            <span>{brideName}</span>
+            <em>y</em>
+            <span>{groomName}</span>
+          </h1>
+
+          <div className="surname-line">
+            <span>Vega Carrera</span>
+            <i />
+            <span>Morales Campaña</span>
+          </div>
+
+          <div className="baroque-divider"><Sparkles size={16} /></div>
+
+          <p className="church-invite-copy">
+            {config.hero_message || 'Con la bendición de Dios y el amor de nuestras familias, queremos compartir contigo el inicio de nuestra nueva vida juntos.'}
+          </p>
+
+          <div className="date-luxury">
+            <span>{formatWeddingDate(config.wedding_date).replace(',', '')}</span>
+            <strong>{config.ceremony_time} hrs</strong>
+            <span>{config.venue_name}</span>
+          </div>
+
+          <div className="hero-actions ornate-actions">
+            <Link href="/confirmar" className="btn-gold">💌 Confirmar asistencia</Link>
+            <a href={mapsUrl} className="btn-ghost" target="_blank" rel="noreferrer"><Navigation size={16} /> Ver ubicación</a>
           </div>
         </article>
 
-        <aside className="side-panel">
-          <div className="photo-tile">
-            <img src="/images/wedding/floral-arch.jpeg" alt="Decoración floral lila y blanca para boda" />
-            <span className="photo-caption">Nuestra boda</span>
+        <aside className="baroque-side">
+          <div className="side-photo-card hero-photo-main">
+            <img src="/images/wedding/hero-sign.jpeg" alt="Cartel floral elegante de boda" />
+            <span>Invitación Iglesia</span>
           </div>
 
-          <div className="countdown-card">
+          <div className="side-mini-grid">
+            <div className="side-photo-card small"><img src="/images/wedding/bridal-bouquet.jpeg" alt="Ramo de flores blancas y lilas" /><span>Flores</span></div>
+            <div className="side-photo-card small"><img src="/images/wedding/wedding-cake.jpeg" alt="Torta blanca con flores lilas" /><span>Dorado & lila</span></div>
+          </div>
+
+          <div className="countdown-card ornate-panel">
             <p className="countdown-title">Faltan</p>
             <Countdown weddingDate={config.wedding_date} />
           </div>
 
-          <div className="calendar-card">
+          <div className="calendar-card ornate-panel">
             <MiniCalendar />
           </div>
 
-          <div className="lux-card" style={{ padding: 20, display: 'grid', gap: 12 }}>
-            <p className="section-label" style={{ margin: 0, letterSpacing: '.22em' }}>Contáctanos</p>
+          <div className="contact-panel ornate-panel">
+            <p className="section-label" style={{ margin: 0, letterSpacing: '.22em' }}>Contacto</p>
             <a className="btn-whatsapp" href={`https://wa.me/${WHATSAPP_1}?text=${whatsappText}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={16} /> WhatsApp 1
+              <MessageCircle size={16} /> 926301822
             </a>
             <a className="btn-whatsapp" href={`https://wa.me/${WHATSAPP_2}?text=${whatsappText}`} target="_blank" rel="noreferrer">
-              <MessageCircle size={16} /> WhatsApp 2
+              <MessageCircle size={16} /> 988215400
             </a>
           </div>
         </aside>
+      </div>
+
+      <div className="hero-bottom-ribbon" aria-hidden="true">
+        <span><CalendarDays size={16} /> 6 febrero 2027</span>
+        <span><Clock size={16} /> 18:00 hrs</span>
+        <span><MapPin size={16} /> Catedral de Antofagasta</span>
       </div>
     </section>
   )
