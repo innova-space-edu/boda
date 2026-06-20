@@ -1,0 +1,194 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cream: #FAF7F2;
+  --ivory: #F5EFE6;
+  --gold: #C9A96E;
+  --gold-light: #E8D5A3;
+  --gold-dark: #9A7A45;
+  --rose: #C4748A;
+  --rose-light: #F0D4DC;
+  --rose-muted: #E8B4C0;
+  --sage: #7A9E87;
+  --sage-light: #C8DDD0;
+  --charcoal: #2C2C2C;
+  --charcoal-muted: #5A5A5A;
+  --white: #FFFFFF;
+  --border: #E8DDD0;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--cream);
+  color: var(--charcoal);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display { font-family: 'Playfair Display', Georgia, serif; }
+.font-cormorant { font-family: 'Cormorant Garamond', Georgia, serif; }
+.font-inter { font-family: 'Inter', system-ui, sans-serif; }
+
+@keyframes brideWalk {
+  0%   { transform: translateX(-150px); }
+  100% { transform: translateX(105vw); }
+}
+@keyframes dressFlow {
+  0%, 100% { transform: skewX(-1deg); }
+  50%       { transform: skewX(1deg); }
+}
+@keyframes veilFloat {
+  0%, 100% { transform: translateX(0) rotate(-3deg); }
+  50%       { transform: translateX(4px) rotate(-1deg); }
+}
+@keyframes legSwing {
+  0%, 100% { transform: rotate(-12deg); }
+  50%       { transform: rotate(12deg); }
+}
+@keyframes armSwing {
+  0%, 100% { transform: rotate(8deg); }
+  50%       { transform: rotate(-8deg); }
+}
+@keyframes petalFall {
+  0%   { transform: translateY(-20px) translateX(0) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(100vh) translateX(80px) rotate(400deg); opacity: 0; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  14%       { transform: scale(1.2); }
+  28%       { transform: scale(1); }
+  42%       { transform: scale(1.1); }
+}
+@keyframes shimmerGold {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes countdownTick {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.04); }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-50px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideInRight {
+  from { transform: translateX(50px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes envelopeLidOpen {
+  0%   { transform: rotateX(0deg); transform-origin: top; }
+  100% { transform: rotateX(-160deg); transform-origin: top; }
+}
+@keyframes letterRise {
+  0%   { transform: translateY(60px); opacity: 0; }
+  100% { transform: translateY(-30px); opacity: 1; }
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+@keyframes introFadeOut {
+  0%   { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+@keyframes pathChurch {
+  0%   { stroke-dashoffset: 2000; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes skyGlow {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 1; transform: scale(1.3); }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+.animate-fade-in    { animation: fadeIn 1s ease-out forwards; }
+.animate-float      { animation: floatUp 3s ease-in-out infinite; }
+.animate-heartbeat  { animation: heartBeat 2s ease-in-out infinite; }
+
+.gold-text {
+  background: linear-gradient(90deg, var(--gold-dark) 0%, var(--gold) 50%, var(--gold-dark) 100%);
+  background-size: 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmerGold 3s linear infinite;
+}
+
+.gold-divider {
+  display: flex; align-items: center; gap: 1rem; margin: 2rem 0;
+}
+.gold-divider::before, .gold-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+
+.navbar-glass {
+  background: rgba(250, 247, 242, 0.93);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(201, 169, 110, 0.25);
+}
+
+.reveal {
+  opacity: 0; transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+.wedding-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(44,44,44,0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.wedding-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(44,44,44,0.12);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: white; border: none; border-radius: 50px;
+  padding: 0.75rem 2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem; font-weight: 500;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(201,169,110,0.35);
+  display: inline-block; text-decoration: none;
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,169,110,0.45); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--ivory); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; }
+}
