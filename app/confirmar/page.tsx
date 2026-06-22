@@ -1,5 +1,5 @@
-import RsvpStandalone from "@/components/wedding/RsvpStandalone";
+import WeddingInvitation from "@/components/WeddingInvitation";
 
 export default function ConfirmarPage() {
-  return <RsvpStandalone />;
+  return <WeddingInvitation mode="confirm" />;
 }

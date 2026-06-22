@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900" viewBox="0 0 700 900">
+  <rect width="700" height="900" fill="#fff7fb"/>
+  <rect x="40" y="40" width="620" height="820" rx="40" fill="#f7efe2" stroke="#b98729" stroke-width="4"/>
+  <path d="M350 250c50-80 150-20 90 70l-90 100-90-100c-60-90 40-150 90-70z" fill="#caa7dc" opacity=".55"/>
+  <text x="350" y="560" text-anchor="middle" font-family="Georgia" font-size="42" fill="#7c5512">Foto editable</text>
+  <text x="350" y="625" text-anchor="middle" font-family="Georgia" font-size="30" fill="#6d625d">Nuestro camino</text>
+</svg>

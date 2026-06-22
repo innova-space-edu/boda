@@ -1,5 +1,5 @@
-import InvitationExperience from "@/components/wedding/InvitationExperience";
+import WeddingInvitation from "@/components/WeddingInvitation";
 
 export default function HomePage() {
-  return <InvitationExperience />;
+  return <WeddingInvitation mode="full" />;
 }
