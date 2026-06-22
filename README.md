@@ -1,66 +1,85 @@
-# Portal de Boda — Carolina & Esthefano
+# Invitación digital de boda — Carolina & Esthefano
 
-Portal web para invitación digital, confirmación de asistencia, lluvia de sobres y administración de invitados.
+Proyecto Next.js para una invitación digital pensada para WhatsApp y celular.
 
-## Diseño actualizado
+## Estilo
 
-Tema visual: invitación digital elegante en blanco, dorado, negro y lila, con flores, rosas, estrellas animadas, estrellas fugaces, sobre interactivo, calendario con corazón en el día 6 y mapa funcional de Google Maps.
+- Diseño vertical tipo invitación digital móvil.
+- Fondos en imágenes 9:16.
+- Texto real en código con fuentes elegantes.
+- Botones transparentes/dorados encima de las imágenes.
+- Confirmación de asistencia conectable a Supabase.
+- Panel admin para editar datos, lluvia de sobres, WhatsApp, enlace de álbum y ver respuestas.
 
-Incluye imágenes temporales en:
+## Rutas
 
-```text
-public/images/wedding/
+- `/` Invitación completa.
+- `/invite` Invitación completa, ideal para compartir por WhatsApp.
+- `/confirmar` Solo formulario de confirmación.
+- `/admin/login` Login administrador.
+- `/admin/dashboard` Panel administrativo.
+
+## Imágenes
+
+Las imágenes están en:
+
+```txt
+public/invitation/
 ```
 
-Formatos recomendados para reemplazar imágenes:
+Puedes reemplazarlas con imágenes `.jpg`, `.jpeg` o `.png`, manteniendo los mismos nombres:
 
-```text
-URL pública directa
-.jpg
-.jpeg
-.png
+```txt
+01-carta-inicial.jpg
+02-invitacion-fondo.jpg
+03-presentacion-fondo.jpg
+04-detalles-fondo.jpg
+05-confirmacion-fondo.jpg
+06-lluvia-sobres-fondo.jpg
+07-cierre-fondo.jpg
 ```
 
-Las imágenes temporales se pueden reemplazar después manteniendo el mismo nombre o cambiando las URL desde el panel administrador.
+Tamaño recomendado para WhatsApp/celular:
 
-## Rutas principales
-
-```text
-/                  Portal principal con invitación digital
-/confirmar         Confirmación con sobre animado
-/invite            Página solo con encuesta para compartir
-/quienes-somos     Información de los novios
-/admin/login       Login administrador
-/admin/dashboard   Panel administrador
+```txt
+1080 x 1920 px
 ```
 
-## Datos de boda incluidos
+Las fotos temporales están en:
 
-- Novia: Carolina Elizabeth Vega Carrera
-- Novio: Esthefano Gonzalo Morales Campaña
-- Fecha: 6 de febrero de 2027
-- Lugar: Catedral de Antofagasta
-- Ciudad: Antofagasta
-- Hora: 18:00 hrs
-- WhatsApp: 926301822 y 988215400
+```txt
+public/placeholders/
+```
 
-## Cloudflare Pages
+## Instalación local
 
-Configuración recomendada:
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
 
-```text
-Framework preset: Next.js
+## Build para Cloudflare Pages
+
+```bash
+npm run build
+```
+
+Cloudflare Pages:
+
+```txt
 Build command: npm run build
 Build output directory: out
-Root directory: /
-Production branch: main
 ```
 
-El proyecto tiene `output: "export"` en `next.config.ts`, por lo que `npm run build` genera automáticamente la carpeta `out`.
+## Supabase
 
-## Variables de entorno
+1. Crea un proyecto en Supabase.
+2. Ejecuta `supabase-migration.sql` en SQL Editor.
+3. Crea el usuario admin en Authentication.
+4. Copia tus claves en `.env.local` y también en Cloudflare Pages.
 
-Crear en Cloudflare Pages o en `.env.local`:
+Variables:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
@@ -68,47 +87,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
 NEXT_PUBLIC_ADMIN_EMAIL=sthefanomc@gmail.com
 ```
 
-## Supabase
-
-Ejecutar el archivo:
-
-```text
-supabase-migration.sql
-```
-
-Luego crear el usuario administrador en Supabase Authentication con el correo configurado en `NEXT_PUBLIC_ADMIN_EMAIL`.
-
-## Comandos locales
+## Subir a GitHub
 
 ```bash
-npm install
-npm run lint
-npm run build
-npm run dev
+git add .
+git commit -m "Nueva invitacion digital celular"
+git push
 ```
-
-## Notas importantes
-
-- No subir `.env.local` a GitHub.
-- La carpeta `out` no se crea manualmente; se genera durante el build.
-- El mapa usa Google Maps mediante iframe y link de búsqueda.
-- Los botones de WhatsApp usan enlaces `wa.me` con código de país de Chile.
-
-## Rediseño iglesia — versión barroca lila/dorado
-
-Esta versión cambia la estética completa hacia una invitación religiosa más elegante, inspirada en tarjetas clásicas con letras cursivas antiguas, relieves dorados/plateados, fondo claro lila/blanco y detalles florales.
-
-Incluye:
-
-- Portada digital estilo tarjeta de invitación vertical.
-- Tipografía cursiva ornamental para los nombres de los novios.
-- Tonos blanco, dorado, lila y plateado.
-- Animación inicial mejorada: la novia camina hacia la iglesia y el novio espera en la puerta.
-- Fondo con estrellas lilas y estrellas fugaces.
-- Calendario de febrero 2027 con corazón lila en el día 6.
-- Mapa embebido de la Catedral de Antofagasta y botón para abrir Google Maps.
-- Botones WhatsApp para 926301822 y 988215400.
-- Sección de lluvia de sobres con botón “Ver datos de transferencia” solo cuando el invitado marca que desea considerar aporte monetario.
-- Imágenes temporales de boda en `public/images/wedding/`, reemplazables por archivos `.jpg`, `.jpeg`, `.png` o por URL pública desde el panel administrador.
-
-> Nota: las imágenes actuales son placeholders de temática boda lila/dorado. Puedes reemplazarlas manteniendo los mismos nombres de archivo para conservar tamaños y formatos.

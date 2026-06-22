@@ -1,19 +1,15 @@
-import type { Metadata } from 'next'
-import './globals.css'
-import { Toaster } from '@/components/ui/sonner'
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Carolina & Esthefano — 6 Febrero 2027',
-  description: 'Portal de invitación y confirmación para la boda de Carolina y Esthefano',
-}
+  title: "Carolina & Esthefano | Invitación de Boda",
+  description: "Invitación religiosa y confirmación de asistencia para la boda de Carolina y Esthefano.",
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
-      <body>
-        {children}
-        <Toaster position="top-center" richColors />
-      </body>
+      <body>{children}</body>
     </html>
-  )
+  );
 }

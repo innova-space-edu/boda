@@ -1,135 +1,92 @@
--- ============================================================
--- BODA CAROLINA & ESTHEFANO — Supabase Migration
--- Ejecutar en: Supabase Dashboard > SQL Editor
--- ============================================================
+-- Ejecutar en Supabase SQL Editor
+-- Proyecto: Invitación digital Carolina & Esthefano
 
--- Cambia este correo si el administrador principal será otro.
-CREATE OR REPLACE FUNCTION public.is_wedding_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-AS $$
-  SELECT COALESCE(auth.jwt() ->> 'email', '') = 'sthefanomc@gmail.com';
-$$;
+create extension if not exists "pgcrypto";
 
--- 1. Configuración editable de la boda
-CREATE TABLE IF NOT EXISTS public.wedding_config (
-  id TEXT PRIMARY KEY DEFAULT '1',
-  bride_name TEXT NOT NULL DEFAULT 'Carolina Elizabeth Vega Carrera',
-  groom_name TEXT NOT NULL DEFAULT 'Esthefano Gonzalo Morales Campaña',
-  wedding_date DATE NOT NULL DEFAULT '2027-02-06',
-  ceremony_time TEXT NOT NULL DEFAULT '18:00',
-  venue_name TEXT NOT NULL DEFAULT 'Catedral de Antofagasta',
-  venue_address TEXT NOT NULL DEFAULT 'Plaza España s/n',
-  city TEXT NOT NULL DEFAULT 'Antofagasta, Chile',
-  love_story TEXT DEFAULT 'Nuestra historia comenzó con una mirada, creció con el tiempo y hoy culmina en el día más especial de nuestras vidas. Gracias por ser parte de este momento único.',
-  bride_bio TEXT DEFAULT '',
-  groom_bio TEXT DEFAULT '',
-  bride_image_url TEXT DEFAULT '',
-  groom_image_url TEXT DEFAULT '',
-  hero_image_url TEXT DEFAULT '',
-  bank_name TEXT DEFAULT '',
-  account_type TEXT DEFAULT '',
-  account_number TEXT DEFAULT '',
-  account_holder TEXT DEFAULT '',
-  account_rut TEXT DEFAULT '',
-  bank_email TEXT DEFAULT '',
-  hero_message TEXT DEFAULT 'Con la bendición de Dios y el amor de nuestras familias, queremos compartir contigo el inicio de nuestra nueva vida juntos.',
-  dress_code TEXT DEFAULT 'Formal elegante · tonos blanco, dorado, negro o lila sugeridos',
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+create table if not exists public.wedding_settings (
+  id text primary key default 'main',
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
 );
 
--- Si la tabla ya existía desde una versión anterior, agrega columnas nuevas.
-ALTER TABLE public.wedding_config ADD COLUMN IF NOT EXISTS bride_image_url TEXT DEFAULT '';
-ALTER TABLE public.wedding_config ADD COLUMN IF NOT EXISTS groom_image_url TEXT DEFAULT '';
-ALTER TABLE public.wedding_config ADD COLUMN IF NOT EXISTS hero_image_url TEXT DEFAULT '';
-
-INSERT INTO public.wedding_config (id) VALUES ('1') ON CONFLICT (id) DO NOTHING;
-
--- 2. Respuestas RSVP
-CREATE TABLE IF NOT EXISTS public.rsvp_responses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  family_name TEXT NOT NULL,
-  phone TEXT DEFAULT '',
-  email TEXT DEFAULT '',
-  members JSONB NOT NULL DEFAULT '[]',
-  total_attending INT NOT NULL DEFAULT 0,
-  dietary_notes TEXT DEFAULT '',
-  envelope_message TEXT DEFAULT '',
-  will_contribute BOOLEAN DEFAULT FALSE,
-  ip_address TEXT DEFAULT '',
-  user_agent TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+create table if not exists public.rsvp_responses (
+  id uuid primary key default gen_random_uuid(),
+  family_name text not null,
+  main_guest text not null,
+  attending boolean not null default true,
+  companions jsonb not null default '[]'::jsonb,
+  total_attending integer not null default 0,
+  message text,
+  created_at timestamptz not null default now()
 );
 
--- 3. Log de accesos
-CREATE TABLE IF NOT EXISTS public.access_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  page TEXT NOT NULL,
-  ip_address TEXT DEFAULT '',
-  user_agent TEXT DEFAULT '',
-  referrer TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+alter table public.wedding_settings enable row level security;
+alter table public.rsvp_responses enable row level security;
 
-CREATE INDEX IF NOT EXISTS idx_rsvp_responses_created_at ON public.rsvp_responses (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_access_log_created_at ON public.access_log (created_at DESC);
+-- Limpia políticas anteriores si vuelves a ejecutar
+DROP POLICY IF EXISTS "settings public select" ON public.wedding_settings;
+DROP POLICY IF EXISTS "settings admin update" ON public.wedding_settings;
+DROP POLICY IF EXISTS "settings admin insert" ON public.wedding_settings;
+DROP POLICY IF EXISTS "rsvp public insert" ON public.rsvp_responses;
+DROP POLICY IF EXISTS "rsvp admin select" ON public.rsvp_responses;
+DROP POLICY IF EXISTS "rsvp admin delete" ON public.rsvp_responses;
 
--- ============================================================
--- RLS POLICIES
--- ============================================================
+create policy "settings public select"
+on public.wedding_settings for select
+to anon, authenticated
+using (true);
 
-ALTER TABLE public.wedding_config ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.rsvp_responses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.access_log ENABLE ROW LEVEL SECURITY;
+create policy "settings admin update"
+on public.wedding_settings for update
+to authenticated
+using ((auth.jwt() ->> 'email') = 'sthefanomc@gmail.com')
+with check ((auth.jwt() ->> 'email') = 'sthefanomc@gmail.com');
 
-DROP POLICY IF EXISTS wedding_config_public_read ON public.wedding_config;
-DROP POLICY IF EXISTS wedding_config_admin_insert ON public.wedding_config;
-DROP POLICY IF EXISTS wedding_config_admin_update ON public.wedding_config;
-DROP POLICY IF EXISTS wedding_config_admin_delete ON public.wedding_config;
-DROP POLICY IF EXISTS wedding_config_admin_write ON public.wedding_config;
+create policy "settings admin insert"
+on public.wedding_settings for insert
+to authenticated
+with check ((auth.jwt() ->> 'email') = 'sthefanomc@gmail.com');
 
-CREATE POLICY wedding_config_public_read ON public.wedding_config
-  FOR SELECT USING (true);
+create policy "rsvp public insert"
+on public.rsvp_responses for insert
+to anon, authenticated
+with check (true);
 
-CREATE POLICY wedding_config_admin_insert ON public.wedding_config
-  FOR INSERT WITH CHECK (public.is_wedding_admin());
+create policy "rsvp admin select"
+on public.rsvp_responses for select
+to authenticated
+using ((auth.jwt() ->> 'email') = 'sthefanomc@gmail.com');
 
-CREATE POLICY wedding_config_admin_update ON public.wedding_config
-  FOR UPDATE USING (public.is_wedding_admin()) WITH CHECK (public.is_wedding_admin());
+create policy "rsvp admin delete"
+on public.rsvp_responses for delete
+to authenticated
+using ((auth.jwt() ->> 'email') = 'sthefanomc@gmail.com');
 
-CREATE POLICY wedding_config_admin_delete ON public.wedding_config
-  FOR DELETE USING (public.is_wedding_admin());
-
-DROP POLICY IF EXISTS rsvp_public_insert ON public.rsvp_responses;
-DROP POLICY IF EXISTS rsvp_admin_read ON public.rsvp_responses;
-DROP POLICY IF EXISTS rsvp_admin_delete ON public.rsvp_responses;
-
-CREATE POLICY rsvp_public_insert ON public.rsvp_responses
-  FOR INSERT WITH CHECK (true);
-
-CREATE POLICY rsvp_admin_read ON public.rsvp_responses
-  FOR SELECT USING (public.is_wedding_admin());
-
-CREATE POLICY rsvp_admin_delete ON public.rsvp_responses
-  FOR DELETE USING (public.is_wedding_admin());
-
-DROP POLICY IF EXISTS log_public_insert ON public.access_log;
-DROP POLICY IF EXISTS log_admin_read ON public.access_log;
-DROP POLICY IF EXISTS log_admin_delete ON public.access_log;
-
-CREATE POLICY log_public_insert ON public.access_log
-  FOR INSERT WITH CHECK (true);
-
-CREATE POLICY log_admin_read ON public.access_log
-  FOR SELECT USING (public.is_wedding_admin());
-
-CREATE POLICY log_admin_delete ON public.access_log
-  FOR DELETE USING (public.is_wedding_admin());
-
--- ============================================================
--- IMPORTANTE
--- 1) Crea el usuario admin en Supabase > Authentication > Users.
--- 2) Usa el correo definido en is_wedding_admin().
--- 3) No guardes contraseñas en GitHub ni en este archivo SQL.
--- ============================================================
+insert into public.wedding_settings (id, data)
+values (
+  'main',
+  '{
+    "brideFullName":"Carolina Elizabeth Vega Carrera",
+    "groomFullName":"Esthefano Gonzalo Morales Campaña",
+    "brideShortName":"Carolina",
+    "groomShortName":"Esthefano",
+    "dateISO":"2027-02-06T18:00:00-03:00",
+    "dateText":"Sábado 6 de febrero de 2027",
+    "timeText":"18:00 hrs",
+    "venue":"Catedral de Antofagasta",
+    "city":"Antofagasta, Chile",
+    "mapsUrl":"https://www.google.com/maps/search/?api=1&query=Catedral%20de%20Antofagasta%20Antofagasta%20Chile",
+    "whatsappOne":"56926301822",
+    "whatsappTwo":"56988215400",
+    "photoUploadUrl":"https://www.instagram.com/",
+    "dressCode":"Formal elegante",
+    "bankName":"Por definir",
+    "bankAccountType":"Por definir",
+    "bankAccountNumber":"Por definir",
+    "bankHolder":"Por definir",
+    "bankRut":"Por definir",
+    "bankEmail":"Por definir",
+    "storyText":"Nuestra historia comenzó con una mirada, creció con el tiempo y hoy llega a un día que queremos vivir junto a las personas que más amamos."
+  }'::jsonb
+)
+on conflict (id) do nothing;
