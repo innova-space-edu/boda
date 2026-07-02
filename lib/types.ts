@@ -39,6 +39,7 @@ export type WeddingSettings = {
   story_image_1_url: string;
   story_image_2_url: string;
   story_image_3_url: string;
+  photo_carousel_urls: string;
   updated_at?: string;
 };
 
