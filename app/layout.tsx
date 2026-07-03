@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./night-theme.css";
+import "./chaotic-stars.css";
 
 export const metadata: Metadata = {
   title: "Carolina & Esthefano | Invitación de boda",
