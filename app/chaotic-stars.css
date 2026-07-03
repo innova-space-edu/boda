@@ -1,0 +1,78 @@
+body::before {
+  background-image:
+    radial-gradient(circle at 11% 19%, rgba(255,255,255,.95) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 73% 8%, rgba(242,217,154,.75) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 44% 31%, rgba(255,255,255,.55) 0 .8px, transparent 1.6px),
+    radial-gradient(circle at 86% 43%, rgba(255,255,255,.8) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 22% 67%, rgba(242,217,154,.58) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 61% 76%, rgba(255,255,255,.65) 0 1px, transparent 1.7px),
+    radial-gradient(circle at 93% 86%, rgba(242,217,154,.65) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 5% 92%, rgba(255,255,255,.75) 0 1px, transparent 1.8px) !important;
+  background-size: 317px 241px, 461px 389px, 283px 521px, 613px 337px, 397px 457px, 541px 293px, 701px 509px, 233px 619px !important;
+  background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px !important;
+  animation: starChaosA 13s steps(7, end) infinite, starTwinkleChaos 2.7s ease-in-out infinite alternate !important;
+}
+
+.invitation-page::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .68;
+  background-image:
+    radial-gradient(circle at 13% 28%, rgba(255,255,255,.85) 0 1.1px, transparent 2px),
+    radial-gradient(circle at 39% 6%, rgba(242,217,154,.6) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 81% 62%, rgba(255,255,255,.72) 0 1px, transparent 1.9px),
+    radial-gradient(circle at 51% 88%, rgba(242,217,154,.7) 0 1.2px, transparent 2.2px),
+    radial-gradient(circle at 97% 22%, rgba(255,255,255,.5) 0 .8px, transparent 1.6px);
+  background-size: 359px 271px, 503px 431px, 277px 617px, 641px 367px, 409px 557px;
+  background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px;
+  transform: rotate(-.7deg) scale(1.05);
+  animation: starChaosB 17s steps(9, end) infinite, starTiltChaos 8s ease-in-out infinite alternate;
+}
+
+body::after {
+  background:
+    linear-gradient(118deg, transparent 0%, rgba(255,255,255,0) 31%, rgba(255,246,212,.95) 49%, rgba(196,150,60,.5) 63%, transparent 82%) -32% -10% / 250px 2px no-repeat,
+    linear-gradient(132deg, transparent 0%, rgba(255,255,255,0) 34%, rgba(255,246,212,.92) 50%, rgba(196,150,60,.46) 64%, transparent 82%) 18% -22% / 210px 2px no-repeat,
+    linear-gradient(107deg, transparent 0%, rgba(255,255,255,0) 31%, rgba(255,246,212,.9) 50%, rgba(196,150,60,.44) 65%, transparent 84%) 78% -14% / 285px 2px no-repeat !important;
+  animation: shootingDownChaos 1s steps(5, end) infinite !important;
+}
+
+@keyframes starChaosA {
+  0% { background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px; transform: translate3d(0,0,0) rotate(0deg); }
+  13% { background-position: -31px 46px, 172px -22px, 89px 257px, 364px 11px, 18px 501px, 481px 93px, 533px 371px, 71px 498px; transform: translate3d(4px,-7px,0) rotate(.18deg); }
+  29% { background-position: 57px -29px, 121px 96px, 203px 178px, 271px 157px, 96px 359px, 390px 244px, 685px 288px, -18px 613px; transform: translate3d(-8px,3px,0) rotate(-.24deg); }
+  41% { background-position: -82px 88px, 241px 36px, 77px 311px, 443px 61px, 5px 446px, 511px 121px, 607px 413px, 108px 571px; transform: translate3d(3px,9px,0) rotate(.32deg); }
+  67% { background-position: 34px 132px, 49px -71px, 236px 112px, 213px 207px, 132px 297px, 351px 301px, 741px 231px, -44px 534px; transform: translate3d(-5px,-4px,0) rotate(-.16deg); }
+  83% { background-position: -19px -64px, 194px 143px, 118px 351px, 398px -34px, 41px 521px, 558px 207px, 571px 352px, 156px 475px; transform: translate3d(7px,5px,0) rotate(.22deg); }
+  100% { background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px; transform: translate3d(0,0,0) rotate(0deg); }
+}
+
+@keyframes starChaosB {
+  0% { background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px; }
+  18% { background-position: 96px 7px, 167px 88px, -44px 428px, 571px 169px, 260px 561px; }
+  37% { background-position: -33px 129px, 294px -48px, 91px 316px, 433px 307px, 389px 472px; }
+  52% { background-position: 118px 94px, 211px 135px, -71px 482px, 622px 211px, 226px 431px; }
+  76% { background-position: 12px -39px, 341px 54px, 63px 392px, 462px 146px, 437px 539px; }
+  100% { background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px; }
+}
+
+@keyframes starTwinkleChaos {
+  0% { opacity: .46; filter: brightness(.75) blur(0); }
+  38% { opacity: .9; filter: brightness(1.35) blur(.2px); }
+  61% { opacity: .58; filter: brightness(.9) blur(0); }
+  100% { opacity: .82; filter: brightness(1.15) blur(.1px); }
+}
+
+@keyframes starTiltChaos {
+  0% { transform: rotate(-.7deg) scale(1.05) translate3d(0,0,0); }
+  100% { transform: rotate(.9deg) scale(1.07) translate3d(-18px, 22px, 0); }
+}
+
+@keyframes shootingDownChaos {
+  0% { opacity: 0; background-position: -32% -10%, 18% -22%, 78% -14%; }
+  10% { opacity: .95; }
+  100% { opacity: 0; background-position: 62% 122%, 92% 118%, 142% 132%; }
+}
