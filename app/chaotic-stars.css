@@ -10,26 +10,35 @@ body::before {
     radial-gradient(circle at 5% 92%, rgba(255,255,255,.75) 0 1px, transparent 1.8px) !important;
   background-size: 317px 241px, 461px 389px, 283px 521px, 613px 337px, 397px 457px, 541px 293px, 701px 509px, 233px 619px !important;
   background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px !important;
-  animation: starChaosA 13s steps(7, end) infinite, starTwinkleChaos 2.7s ease-in-out infinite alternate !important;
+  animation:
+    starDriftSmoothA 34s cubic-bezier(.37, 0, .63, 1) infinite alternate,
+    starWaveSmoothA 19s ease-in-out infinite,
+    starTwinkleSmooth 4.8s ease-in-out infinite alternate !important;
+  will-change: background-position, transform, opacity, filter;
 }
 
 .invitation-page::before {
   content: "";
   position: fixed;
-  inset: -12%;
+  inset: -14%;
   z-index: -1;
   pointer-events: none;
-  opacity: .68;
+  opacity: .72;
   background-image:
     radial-gradient(circle at 13% 28%, rgba(255,255,255,.85) 0 1.1px, transparent 2px),
     radial-gradient(circle at 39% 6%, rgba(242,217,154,.6) 0 .9px, transparent 1.8px),
     radial-gradient(circle at 81% 62%, rgba(255,255,255,.72) 0 1px, transparent 1.9px),
     radial-gradient(circle at 51% 88%, rgba(242,217,154,.7) 0 1.2px, transparent 2.2px),
-    radial-gradient(circle at 97% 22%, rgba(255,255,255,.5) 0 .8px, transparent 1.6px);
-  background-size: 359px 271px, 503px 431px, 277px 617px, 641px 367px, 409px 557px;
-  background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px;
+    radial-gradient(circle at 97% 22%, rgba(255,255,255,.5) 0 .8px, transparent 1.6px),
+    radial-gradient(circle at 26% 72%, rgba(255,255,255,.58) 0 .9px, transparent 1.7px);
+  background-size: 359px 271px, 503px 431px, 277px 617px, 641px 367px, 409px 557px, 733px 389px;
+  background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px, 620px 92px;
   transform: rotate(-.7deg) scale(1.05);
-  animation: starChaosB 17s steps(9, end) infinite, starTiltChaos 8s ease-in-out infinite alternate;
+  animation:
+    starDriftSmoothB 43s cubic-bezier(.45, .02, .54, .98) infinite alternate,
+    starFloatSmoothB 27s ease-in-out infinite,
+    starTwinkleSmoothB 6.5s ease-in-out infinite alternate;
+  will-change: background-position, transform, opacity, filter;
 }
 
 body::after {
@@ -37,42 +46,87 @@ body::after {
     linear-gradient(118deg, transparent 0%, rgba(255,255,255,0) 31%, rgba(255,246,212,.95) 49%, rgba(196,150,60,.5) 63%, transparent 82%) -32% -10% / 250px 2px no-repeat,
     linear-gradient(132deg, transparent 0%, rgba(255,255,255,0) 34%, rgba(255,246,212,.92) 50%, rgba(196,150,60,.46) 64%, transparent 82%) 18% -22% / 210px 2px no-repeat,
     linear-gradient(107deg, transparent 0%, rgba(255,255,255,0) 31%, rgba(255,246,212,.9) 50%, rgba(196,150,60,.44) 65%, transparent 84%) 78% -14% / 285px 2px no-repeat !important;
-  animation: shootingDownChaos 1s steps(5, end) infinite !important;
+  animation: shootingDownSmooth 1.15s cubic-bezier(.2, .55, .22, 1) infinite !important;
+  will-change: background-position, opacity;
 }
 
-@keyframes starChaosA {
-  0% { background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px; transform: translate3d(0,0,0) rotate(0deg); }
-  13% { background-position: -31px 46px, 172px -22px, 89px 257px, 364px 11px, 18px 501px, 481px 93px, 533px 371px, 71px 498px; transform: translate3d(4px,-7px,0) rotate(.18deg); }
-  29% { background-position: 57px -29px, 121px 96px, 203px 178px, 271px 157px, 96px 359px, 390px 244px, 685px 288px, -18px 613px; transform: translate3d(-8px,3px,0) rotate(-.24deg); }
-  41% { background-position: -82px 88px, 241px 36px, 77px 311px, 443px 61px, 5px 446px, 511px 121px, 607px 413px, 108px 571px; transform: translate3d(3px,9px,0) rotate(.32deg); }
-  67% { background-position: 34px 132px, 49px -71px, 236px 112px, 213px 207px, 132px 297px, 351px 301px, 741px 231px, -44px 534px; transform: translate3d(-5px,-4px,0) rotate(-.16deg); }
-  83% { background-position: -19px -64px, 194px 143px, 118px 351px, 398px -34px, 41px 521px, 558px 207px, 571px 352px, 156px 475px; transform: translate3d(7px,5px,0) rotate(.22deg); }
-  100% { background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px; transform: translate3d(0,0,0) rotate(0deg); }
+@keyframes starDriftSmoothA {
+  0% {
+    background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px;
+    transform: translate3d(0,0,0) rotate(0deg) scale(1);
+  }
+  18% {
+    background-position: -19px 28px, 134px -9px, 117px 243px, 342px 49px, 39px 462px, 462px 128px, 578px 348px, 51px 522px;
+    transform: translate3d(4px,-5px,0) rotate(.08deg) scale(1.006);
+  }
+  36% {
+    background-position: 34px -17px, 108px 62px, 184px 194px, 292px 132px, 83px 374px, 407px 219px, 656px 301px, -2px 587px;
+    transform: translate3d(-6px,3px,0) rotate(-.11deg) scale(1.01);
+  }
+  58% {
+    background-position: -47px 66px, 201px 21px, 92px 284px, 396px 68px, 19px 489px, 499px 151px, 603px 389px, 86px 554px;
+    transform: translate3d(3px,7px,0) rotate(.14deg) scale(1.004);
+  }
+  79% {
+    background-position: 23px 103px, 61px -38px, 221px 151px, 247px 184px, 116px 329px, 374px 277px, 704px 256px, -29px 516px;
+    transform: translate3d(-4px,-3px,0) rotate(-.07deg) scale(1.012);
+  }
+  100% {
+    background-position: 58px 142px, 176px 86px, 129px 344px, 433px 18px, 71px 543px, 548px 238px, 566px 416px, 139px 482px;
+    transform: translate3d(5px,4px,0) rotate(.1deg) scale(1.006);
+  }
 }
 
-@keyframes starChaosB {
-  0% { background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px; }
-  18% { background-position: 96px 7px, 167px 88px, -44px 428px, 571px 169px, 260px 561px; }
-  37% { background-position: -33px 129px, 294px -48px, 91px 316px, 433px 307px, 389px 472px; }
-  52% { background-position: 118px 94px, 211px 135px, -71px 482px, 622px 211px, 226px 431px; }
-  76% { background-position: 12px -39px, 341px 54px, 63px 392px, 462px 146px, 437px 539px; }
-  100% { background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px; }
+@keyframes starWaveSmoothA {
+  0% { filter: brightness(.85) blur(0); }
+  25% { filter: brightness(1.18) blur(.08px); }
+  52% { filter: brightness(.92) blur(0); }
+  78% { filter: brightness(1.34) blur(.12px); }
+  100% { filter: brightness(1) blur(.04px); }
 }
 
-@keyframes starTwinkleChaos {
-  0% { opacity: .46; filter: brightness(.75) blur(0); }
-  38% { opacity: .9; filter: brightness(1.35) blur(.2px); }
-  61% { opacity: .58; filter: brightness(.9) blur(0); }
-  100% { opacity: .82; filter: brightness(1.15) blur(.1px); }
+@keyframes starDriftSmoothB {
+  0% {
+    background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px, 620px 92px;
+  }
+  22% {
+    background-position: 78px 31px, 196px 66px, -19px 411px, 548px 196px, 281px 538px, 672px 47px;
+  }
+  45% {
+    background-position: 8px 115px, 279px -25px, 56px 343px, 477px 286px, 352px 486px, 586px 129px;
+  }
+  70% {
+    background-position: 103px 84px, 221px 104px, -38px 457px, 598px 231px, 246px 451px, 719px 77px;
+  }
+  100% {
+    background-position: 22px -12px, 327px 43px, 84px 391px, 452px 168px, 411px 552px, 566px 161px;
+  }
 }
 
-@keyframes starTiltChaos {
+@keyframes starFloatSmoothB {
   0% { transform: rotate(-.7deg) scale(1.05) translate3d(0,0,0); }
+  33% { transform: rotate(.18deg) scale(1.064) translate3d(-9px, 12px, 0); }
+  67% { transform: rotate(-.22deg) scale(1.058) translate3d(14px, -8px, 0); }
   100% { transform: rotate(.9deg) scale(1.07) translate3d(-18px, 22px, 0); }
 }
 
-@keyframes shootingDownChaos {
+@keyframes starTwinkleSmooth {
+  0% { opacity: .58; }
+  29% { opacity: .86; }
+  61% { opacity: .66; }
+  100% { opacity: .93; }
+}
+
+@keyframes starTwinkleSmoothB {
+  0% { opacity: .42; filter: brightness(.8); }
+  40% { opacity: .76; filter: brightness(1.28); }
+  68% { opacity: .54; filter: brightness(.95); }
+  100% { opacity: .82; filter: brightness(1.12); }
+}
+
+@keyframes shootingDownSmooth {
   0% { opacity: 0; background-position: -32% -10%, 18% -22%, 78% -14%; }
-  10% { opacity: .95; }
+  9% { opacity: .92; }
+  74% { opacity: .82; }
   100% { opacity: 0; background-position: 62% 122%, 92% 118%, 142% 132%; }
 }
