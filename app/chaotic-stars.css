@@ -1,96 +1,170 @@
 /* =========================================================
-   SOLO ESTRELLAS FUGACES
+   SOLO LLUVIA DE ESTRELLAS FUGACES
    - sin estrellas fijas
-   - solo trazos diagonales visibles
-   - más ligero para la web
+   - fugaces más lentas
+   - trayectorias distintas
+   - tiempos desfasados
    ========================================================= */
 
-/* Quitar todas las estrellas y cúmulos anteriores */
-body::before,
-.invitation-page::before,
-.invitation-page::after {
+/* quitar cualquier estrella anterior */
+body::before {
   content: none !important;
   background: none !important;
   animation: none !important;
-  filter: none !important;
   opacity: 0 !important;
+  filter: none !important;
 }
 
-/* Dejar solo estrellas fugaces */
+/* base común para meteoros */
+.invitation-page::before,
+.invitation-page::after,
 body::after {
   content: "";
   position: fixed;
-  inset: -18%;
-  z-index: -1;
+  inset: -20%;
   pointer-events: none;
+  z-index: -1;
+  background-repeat: no-repeat;
   opacity: 0;
+  will-change: transform, opacity, background-position;
+  filter:
+    drop-shadow(0 0 8px rgba(255,255,255,.55))
+    drop-shadow(0 0 16px rgba(185,220,255,.22));
+}
 
-  background:
+/* =========================================================
+   METEORO 1
+   ========================================================= */
+.invitation-page::before {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,1) 0 2.6px, rgba(185,220,255,.95) 2.7px, transparent 6px),
     linear-gradient(
       125deg,
       transparent 0%,
-      rgba(255,255,255,0) 28%,
-      rgba(255,255,255,.98) 48%,
-      rgba(185,220,255,.9) 56%,
-      rgba(255,240,210,.45) 67%,
-      transparent 86%
-    ) -30% -12% / 340px 2.6px no-repeat,
+      rgba(255,255,255,0) 18%,
+      rgba(255,255,255,.98) 42%,
+      rgba(190,225,255,.88) 55%,
+      rgba(255,240,210,.26) 68%,
+      transparent 100%
+    );
+  background-size: 12px 12px, 360px 2.4px;
+  background-position: 8% 6%, 8% 6%;
+  animation: meteorA 6.4s ease-in-out infinite;
+}
 
+/* =========================================================
+   METEORO 2
+   ========================================================= */
+.invitation-page::after {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,1) 0 2.3px, rgba(210,230,255,.9) 2.5px, transparent 5.6px),
     linear-gradient(
       122deg,
       transparent 0%,
-      rgba(255,255,255,0) 30%,
-      rgba(255,250,235,.96) 49%,
-      rgba(255,255,255,.88) 56%,
-      rgba(255,240,210,.38) 67%,
-      transparent 86%
-    ) 12% -20% / 270px 2.2px no-repeat,
+      rgba(255,255,255,0) 18%,
+      rgba(255,250,235,.98) 43%,
+      rgba(255,255,255,.85) 56%,
+      rgba(255,238,210,.22) 70%,
+      transparent 100%
+    );
+  background-size: 11px 11px, 300px 2.1px;
+  background-position: 72% 18%, 72% 18%;
+  animation: meteorB 7.8s ease-in-out infinite;
+  animation-delay: -2.8s;
+}
 
+/* =========================================================
+   METEORO 3
+   ========================================================= */
+body::after {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,1) 0 2.8px, rgba(170,205,255,.92) 2.9px, transparent 6.3px),
     linear-gradient(
       128deg,
       transparent 0%,
-      rgba(255,255,255,0) 28%,
-      rgba(255,248,225,.98) 50%,
-      rgba(170,205,255,.88) 58%,
-      rgba(255,235,205,.34) 68%,
-      transparent 86%
-    ) 76% -14% / 380px 2.8px no-repeat;
-
-  filter:
-    drop-shadow(0 0 10px rgba(255,255,255,.62))
-    drop-shadow(0 0 16px rgba(180,215,255,.28));
-
-  animation: onlyShootingStars 1.15s cubic-bezier(.2,.55,.22,1) infinite !important;
-  will-change: background-position, opacity, filter;
+      rgba(255,255,255,0) 18%,
+      rgba(255,248,225,.98) 44%,
+      rgba(170,205,255,.82) 58%,
+      rgba(255,235,205,.22) 72%,
+      transparent 100%
+    );
+  background-size: 13px 13px, 390px 2.5px;
+  background-position: 30% 0%, 30% 0%;
+  animation: meteorC 8.9s ease-in-out infinite;
+  animation-delay: -5.2s;
 }
 
-@keyframes onlyShootingStars {
+/* =========================================================
+   ANIMACIONES
+   cada meteoro viaja por zonas distintas
+   ========================================================= */
+
+@keyframes meteorA {
   0% {
     opacity: 0;
-    background-position: -30% -12%, 12% -20%, 76% -14%;
+    background-position: 8% 6%, 8% 6%;
   }
-
   8% {
     opacity: 1;
   }
-
-  28% {
-    opacity: .96;
+  22% {
+    opacity: .95;
   }
-
-  72% {
-    opacity: .82;
+  65% {
+    opacity: .88;
   }
-
   100% {
     opacity: 0;
-    background-position: 62% 118%, 92% 122%, 146% 132%;
+    background-position: 43% 52%, 43% 52%;
   }
 }
 
+@keyframes meteorB {
+  0% {
+    opacity: 0;
+    background-position: 72% 18%, 72% 18%;
+  }
+  10% {
+    opacity: 1;
+  }
+  25% {
+    opacity: .96;
+  }
+  68% {
+    opacity: .84;
+  }
+  100% {
+    opacity: 0;
+    background-position: 96% 63%, 96% 63%;
+  }
+}
+
+@keyframes meteorC {
+  0% {
+    opacity: 0;
+    background-position: 30% 0%, 30% 0%;
+  }
+  9% {
+    opacity: 1;
+  }
+  24% {
+    opacity: .94;
+  }
+  70% {
+    opacity: .82;
+  }
+  100% {
+    opacity: 0;
+    background-position: 67% 47%, 67% 47%;
+  }
+}
+
+/* accesibilidad */
 @media (prefers-reduced-motion: reduce) {
+  .invitation-page::before,
+  .invitation-page::after,
   body::after {
     animation: none !important;
-    opacity: .35;
+    opacity: .25;
   }
 }
