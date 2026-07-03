@@ -1,132 +1,249 @@
+/* =========================================================
+   CIELO ESTRELLADO ELEGANTE
+   - estrellas dispersas
+   - cúmulo azul tipo Pléyades (abajo izquierda)
+   - cúmulo blanco tipo Joyero
+   - estrellas fugaces visibles
+   ========================================================= */
+
+/* -------- capa base de estrellas dispersas -------- */
 body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.9;
+
   background-image:
-    radial-gradient(circle at 11% 19%, rgba(255,255,255,.95) 0 1px, transparent 1.8px),
-    radial-gradient(circle at 73% 8%, rgba(242,217,154,.75) 0 1.2px, transparent 2px),
-    radial-gradient(circle at 44% 31%, rgba(255,255,255,.55) 0 .8px, transparent 1.6px),
-    radial-gradient(circle at 86% 43%, rgba(255,255,255,.8) 0 1px, transparent 1.9px),
-    radial-gradient(circle at 22% 67%, rgba(242,217,154,.58) 0 1px, transparent 1.7px),
-    radial-gradient(circle at 61% 76%, rgba(255,255,255,.65) 0 1px, transparent 1.7px),
-    radial-gradient(circle at 93% 86%, rgba(242,217,154,.65) 0 1.4px, transparent 2.3px),
-    radial-gradient(circle at 5% 92%, rgba(255,255,255,.75) 0 1px, transparent 1.8px) !important;
-  background-size: 317px 241px, 461px 389px, 283px 521px, 613px 337px, 397px 457px, 541px 293px, 701px 509px, 233px 619px !important;
-  background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px !important;
+    radial-gradient(circle at 1.5% 4%, rgba(255,255,255,.98) 0 1.1px, transparent 2.3px),
+    radial-gradient(circle at 4.8% 23%, rgba(255,255,255,.72) 0 1px, transparent 2px),
+    radial-gradient(circle at 11% 9%, rgba(255,245,220,.88) 0 1px, transparent 2px),
+    radial-gradient(circle at 18% 31%, rgba(255,255,255,.76) 0 1px, transparent 2px),
+    radial-gradient(circle at 23% 7%, rgba(255,255,255,.98) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 29% 44%, rgba(255,255,255,.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 35% 3.5%, rgba(255,245,220,.82) 0 1px, transparent 2px),
+    radial-gradient(circle at 41% 26%, rgba(255,255,255,.68) 0 1px, transparent 2px),
+    radial-gradient(circle at 50% 4.5%, rgba(255,255,255,.92) 0 1.05px, transparent 2.1px),
+    radial-gradient(circle at 60% 2.5%, rgba(255,245,220,.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 67% 4.5%, rgba(255,255,255,.9) 0 1px, transparent 2px),
+    radial-gradient(circle at 74% 21%, rgba(255,255,255,.74) 0 1px, transparent 2px),
+    radial-gradient(circle at 82% 3.5%, rgba(255,255,255,.88) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 2.8%, rgba(255,255,255,.98) 0 1.1px, transparent 2.3px),
+    radial-gradient(circle at 96% 4.8%, rgba(255,245,220,.82) 0 1px, transparent 2px),
+    radial-gradient(circle at 98.2% 8.7%, rgba(255,255,255,.65) 0 1px, transparent 2px),
+
+    radial-gradient(circle at 7% 61%, rgba(255,255,255,.52) 0 1px, transparent 2px),
+    radial-gradient(circle at 12% 72%, rgba(255,245,220,.58) 0 1px, transparent 2px),
+    radial-gradient(circle at 25% 59%, rgba(255,255,255,.5) 0 1px, transparent 2px),
+    radial-gradient(circle at 38% 48%, rgba(255,245,220,.45) 0 1px, transparent 2px),
+    radial-gradient(circle at 52% 68%, rgba(255,255,255,.48) 0 1px, transparent 2px),
+    radial-gradient(circle at 73% 74%, rgba(255,255,255,.42) 0 1px, transparent 2px),
+    radial-gradient(circle at 91% 69%, rgba(255,245,220,.5) 0 1px, transparent 2px),
+
+    radial-gradient(circle at 5% 90%, rgba(255,255,255,.55) 0 1px, transparent 2px),
+    radial-gradient(circle at 17% 88%, rgba(255,245,220,.48) 0 1px, transparent 2px),
+    radial-gradient(circle at 31% 95%, rgba(255,255,255,.58) 0 1px, transparent 2px),
+    radial-gradient(circle at 86% 96%, rgba(255,255,255,.56) 0 1px, transparent 2px),
+    radial-gradient(circle at 98% 98%, rgba(255,245,220,.46) 0 1px, transparent 2px);
+
+  transform: translate3d(0, 0, 0) scale(1.02);
   animation:
-    starDriftSmoothA 34s cubic-bezier(.37, 0, .63, 1) infinite alternate,
-    starWaveSmoothA 19s ease-in-out infinite,
-    starTwinkleSmooth 4.8s ease-in-out infinite alternate !important;
-  will-change: background-position, transform, opacity, filter;
+    starFieldFloatA 28s ease-in-out infinite alternate,
+    starFieldTwinkleA 6.2s ease-in-out infinite alternate;
+  will-change: transform, opacity, filter;
 }
 
+/* -------- segunda capa para profundidad -------- */
 .invitation-page::before {
   content: "";
   position: fixed;
-  inset: -14%;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: .72;
+  opacity: 0.6;
+
   background-image:
-    radial-gradient(circle at 13% 28%, rgba(255,255,255,.85) 0 1.1px, transparent 2px),
-    radial-gradient(circle at 39% 6%, rgba(242,217,154,.6) 0 .9px, transparent 1.8px),
-    radial-gradient(circle at 81% 62%, rgba(255,255,255,.72) 0 1px, transparent 1.9px),
-    radial-gradient(circle at 51% 88%, rgba(242,217,154,.7) 0 1.2px, transparent 2.2px),
-    radial-gradient(circle at 97% 22%, rgba(255,255,255,.5) 0 .8px, transparent 1.6px),
-    radial-gradient(circle at 26% 72%, rgba(255,255,255,.58) 0 .9px, transparent 1.7px);
-  background-size: 359px 271px, 503px 431px, 277px 617px, 641px 367px, 409px 557px, 733px 389px;
-  background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px, 620px 92px;
-  transform: rotate(-.7deg) scale(1.05);
+    radial-gradient(circle at 3% 48%, rgba(255,255,255,.82) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 10% 35%, rgba(255,255,255,.74) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 18% 57%, rgba(255,245,220,.62) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 26% 24%, rgba(255,255,255,.78) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 34% 63%, rgba(255,255,255,.52) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 47% 53%, rgba(255,245,220,.58) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 58% 38%, rgba(255,255,255,.76) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 71% 58%, rgba(255,255,255,.58) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 84% 49%, rgba(255,245,220,.56) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 93% 70%, rgba(255,255,255,.62) 0 .9px, transparent 1.8px),
+
+    radial-gradient(circle at 6% 90%, rgba(255,255,255,.72) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 17% 88%, rgba(255,245,220,.54) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 28% 97%, rgba(255,255,255,.74) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 86% 97%, rgba(255,255,255,.7) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 98% 98%, rgba(255,245,220,.55) 0 .9px, transparent 1.8px);
+
+  transform: translate3d(0, 0, 0) scale(1.04);
   animation:
-    starDriftSmoothB 43s cubic-bezier(.45, .02, .54, .98) infinite alternate,
-    starFloatSmoothB 27s ease-in-out infinite,
-    starTwinkleSmoothB 6.5s ease-in-out infinite alternate;
-  will-change: background-position, transform, opacity, filter;
+    starFieldFloatB 36s ease-in-out infinite alternate,
+    starFieldTwinkleB 7.3s ease-in-out infinite alternate;
+  will-change: transform, opacity, filter;
 }
 
+/* -------- cúmulos especiales: Pléyades + Joyero + gigantes -------- */
+.invitation-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 1;
+
+  background-image:
+    /* Halo Pléyades (abajo izquierda) */
+    radial-gradient(circle at 14% 84%, rgba(92,145,255,.26) 0%, rgba(92,145,255,.11) 3.8%, transparent 11%),
+    radial-gradient(circle at 16.5% 81.5%, rgba(120,175,255,.16) 0%, rgba(120,175,255,.06) 2.8%, transparent 8.8%),
+
+    /* Cúmulo Pléyades */
+    radial-gradient(circle at 12.8% 83.2%, rgba(170,205,255,1) 0 2.8px, transparent 5.4px),
+    radial-gradient(circle at 14.2% 81.4%, rgba(115,170,255,1) 0 3.6px, transparent 6.4px),
+    radial-gradient(circle at 15.6% 84.6%, rgba(185,220,255,1) 0 2.6px, transparent 5px),
+    radial-gradient(circle at 17.2% 82.7%, rgba(132,182,255,1) 0 3px, transparent 5.6px),
+    radial-gradient(circle at 18.5% 85.1%, rgba(150,198,255,.98) 0 2.3px, transparent 4.7px),
+    radial-gradient(circle at 11.5% 86.1%, rgba(128,180,255,.95) 0 2.1px, transparent 4.4px),
+    radial-gradient(circle at 13.6% 87.1%, rgba(205,230,255,.92) 0 1.9px, transparent 4.1px),
+    radial-gradient(circle at 16.7% 86.6%, rgba(165,205,255,.9) 0 2px, transparent 4.2px),
+
+    /* Gigante azul */
+    radial-gradient(circle at 20% 83%, rgba(150,205,255,1) 0 4.3px, transparent 8px),
+
+    /* Estrella roja dispersa */
+    radial-gradient(circle at 25% 77%, rgba(255,120,120,.92) 0 2.7px, transparent 5.4px),
+
+    /* Halo Joyero */
+    radial-gradient(circle at 80% 28%, rgba(255,255,255,.19) 0%, rgba(255,255,255,.08) 3.4%, transparent 9.5%),
+
+    /* Cúmulo Joyero */
+    radial-gradient(circle at 78.8% 29.2%, rgba(255,255,255,1) 0 2.5px, transparent 4.9px),
+    radial-gradient(circle at 80.1% 27.7%, rgba(255,255,255,.98) 0 3.2px, transparent 5.9px),
+    radial-gradient(circle at 81.6% 30%, rgba(255,255,255,.94) 0 2.2px, transparent 4.5px),
+    radial-gradient(circle at 82.8% 27.9%, rgba(255,255,255,.96) 0 2.6px, transparent 4.9px),
+    radial-gradient(circle at 79.4% 31.4%, rgba(255,255,255,.86) 0 1.9px, transparent 4px),
+    radial-gradient(circle at 83.9% 29.3%, rgba(255,255,255,.84) 0 1.8px, transparent 3.9px),
+    radial-gradient(circle at 81.1% 32.1%, rgba(245,248,255,.78) 0 1.7px, transparent 3.8px),
+
+    /* roja cerca del Joyero */
+    radial-gradient(circle at 77.2% 26.4%, rgba(255,110,110,.92) 0 2.9px, transparent 5.5px);
+
+  filter:
+    drop-shadow(0 0 8px rgba(110,170,255,.48))
+    drop-shadow(0 0 12px rgba(255,255,255,.26));
+  transform: translate3d(0,0,0);
+  animation:
+    clusterPulse 4.4s ease-in-out infinite alternate,
+    clusterFloat 17s ease-in-out infinite alternate;
+  will-change: transform, opacity, filter;
+}
+
+/* -------- estrellas fugaces visibles -------- */
 body::after {
   background:
-    linear-gradient(118deg, transparent 0%, rgba(255,255,255,0) 31%, rgba(255,246,212,.95) 49%, rgba(196,150,60,.5) 63%, transparent 82%) -32% -10% / 250px 2px no-repeat,
-    linear-gradient(132deg, transparent 0%, rgba(255,255,255,0) 34%, rgba(255,246,212,.92) 50%, rgba(196,150,60,.46) 64%, transparent 82%) 18% -22% / 210px 2px no-repeat,
-    linear-gradient(107deg, transparent 0%, rgba(255,255,255,0) 31%, rgba(255,246,212,.9) 50%, rgba(196,150,60,.44) 65%, transparent 84%) 78% -14% / 285px 2px no-repeat !important;
-  animation: shootingDownSmooth 1.15s cubic-bezier(.2, .55, .22, 1) infinite !important;
+    linear-gradient(
+      124deg,
+      transparent 0%,
+      rgba(255,255,255,0) 28%,
+      rgba(255,248,220,.98) 48%,
+      rgba(152,196,255,.88) 54%,
+      rgba(196,150,60,.36) 66%,
+      transparent 84%
+    ) -26% -8% / 290px 2.2px no-repeat,
+
+    linear-gradient(
+      129deg,
+      transparent 0%,
+      rgba(255,255,255,0) 30%,
+      rgba(255,248,220,.96) 50%,
+      rgba(255,255,255,.9) 56%,
+      rgba(196,150,60,.3) 68%,
+      transparent 84%
+    ) 16% -16% / 235px 2px no-repeat,
+
+    linear-gradient(
+      117deg,
+      transparent 0%,
+      rgba(255,255,255,0) 28%,
+      rgba(255,248,220,.98) 50%,
+      rgba(120,180,255,.82) 57%,
+      rgba(196,150,60,.28) 68%,
+      transparent 86%
+    ) 76% -10% / 310px 2.2px no-repeat !important;
+
+  animation: shootingDownSmooth 1.2s cubic-bezier(.2,.55,.22,1) infinite !important;
+  filter: drop-shadow(0 0 9px rgba(255,255,255,.52));
   will-change: background-position, opacity;
 }
 
-@keyframes starDriftSmoothA {
+/* =========================================================
+   ANIMACIONES
+   ========================================================= */
+
+@keyframes starFieldFloatA {
+  0%   { transform: translate3d(0px, 0px, 0) scale(1.02); }
+  25%  { transform: translate3d(-6px, 5px, 0) scale(1.028); }
+  50%  { transform: translate3d(8px, -7px, 0) scale(1.022); }
+  75%  { transform: translate3d(-4px, 9px, 0) scale(1.03); }
+  100% { transform: translate3d(10px, -5px, 0) scale(1.026); }
+}
+
+@keyframes starFieldFloatB {
+  0%   { transform: translate3d(0px, 0px, 0) scale(1.04); }
+  30%  { transform: translate3d(10px, -6px, 0) scale(1.048); }
+  60%  { transform: translate3d(-8px, 10px, 0) scale(1.044); }
+  100% { transform: translate3d(12px, 8px, 0) scale(1.05); }
+}
+
+@keyframes starFieldTwinkleA {
+  0%   { opacity: 0.7; filter: brightness(.96); }
+  35%  { opacity: 0.9; filter: brightness(1.26); }
+  70%  { opacity: 0.78; filter: brightness(1.04); }
+  100% { opacity: 0.96; filter: brightness(1.34); }
+}
+
+@keyframes starFieldTwinkleB {
+  0%   { opacity: 0.46; filter: brightness(.84); }
+  40%  { opacity: 0.7; filter: brightness(1.16); }
+  75%  { opacity: 0.56; filter: brightness(.96); }
+  100% { opacity: 0.76; filter: brightness(1.2); }
+}
+
+@keyframes clusterPulse {
   0% {
-    background-position: 0 0, 83px 17px, 151px 219px, 311px 91px, 57px 402px, 429px 166px, 612px 321px, 22px 548px;
-    transform: translate3d(0,0,0) rotate(0deg) scale(1);
+    opacity: .94;
+    filter:
+      drop-shadow(0 0 8px rgba(110,170,255,.42))
+      drop-shadow(0 0 10px rgba(255,255,255,.2));
   }
-  18% {
-    background-position: -19px 28px, 134px -9px, 117px 243px, 342px 49px, 39px 462px, 462px 128px, 578px 348px, 51px 522px;
-    transform: translate3d(4px,-5px,0) rotate(.08deg) scale(1.006);
-  }
-  36% {
-    background-position: 34px -17px, 108px 62px, 184px 194px, 292px 132px, 83px 374px, 407px 219px, 656px 301px, -2px 587px;
-    transform: translate3d(-6px,3px,0) rotate(-.11deg) scale(1.01);
-  }
-  58% {
-    background-position: -47px 66px, 201px 21px, 92px 284px, 396px 68px, 19px 489px, 499px 151px, 603px 389px, 86px 554px;
-    transform: translate3d(3px,7px,0) rotate(.14deg) scale(1.004);
-  }
-  79% {
-    background-position: 23px 103px, 61px -38px, 221px 151px, 247px 184px, 116px 329px, 374px 277px, 704px 256px, -29px 516px;
-    transform: translate3d(-4px,-3px,0) rotate(-.07deg) scale(1.012);
+  50% {
+    opacity: 1;
+    filter:
+      drop-shadow(0 0 13px rgba(120,185,255,.62))
+      drop-shadow(0 0 18px rgba(255,255,255,.34));
   }
   100% {
-    background-position: 58px 142px, 176px 86px, 129px 344px, 433px 18px, 71px 543px, 548px 238px, 566px 416px, 139px 482px;
-    transform: translate3d(5px,4px,0) rotate(.1deg) scale(1.006);
+    opacity: .97;
+    filter:
+      drop-shadow(0 0 10px rgba(110,170,255,.5))
+      drop-shadow(0 0 13px rgba(255,255,255,.25));
   }
 }
 
-@keyframes starWaveSmoothA {
-  0% { filter: brightness(.85) blur(0); }
-  25% { filter: brightness(1.18) blur(.08px); }
-  52% { filter: brightness(.92) blur(0); }
-  78% { filter: brightness(1.34) blur(.12px); }
-  100% { filter: brightness(1) blur(.04px); }
-}
-
-@keyframes starDriftSmoothB {
-  0% {
-    background-position: 41px 71px, 238px 11px, 19px 377px, 517px 248px, 310px 506px, 620px 92px;
-  }
-  22% {
-    background-position: 78px 31px, 196px 66px, -19px 411px, 548px 196px, 281px 538px, 672px 47px;
-  }
-  45% {
-    background-position: 8px 115px, 279px -25px, 56px 343px, 477px 286px, 352px 486px, 586px 129px;
-  }
-  70% {
-    background-position: 103px 84px, 221px 104px, -38px 457px, 598px 231px, 246px 451px, 719px 77px;
-  }
-  100% {
-    background-position: 22px -12px, 327px 43px, 84px 391px, 452px 168px, 411px 552px, 566px 161px;
-  }
-}
-
-@keyframes starFloatSmoothB {
-  0% { transform: rotate(-.7deg) scale(1.05) translate3d(0,0,0); }
-  33% { transform: rotate(.18deg) scale(1.064) translate3d(-9px, 12px, 0); }
-  67% { transform: rotate(-.22deg) scale(1.058) translate3d(14px, -8px, 0); }
-  100% { transform: rotate(.9deg) scale(1.07) translate3d(-18px, 22px, 0); }
-}
-
-@keyframes starTwinkleSmooth {
-  0% { opacity: .58; }
-  29% { opacity: .86; }
-  61% { opacity: .66; }
-  100% { opacity: .93; }
-}
-
-@keyframes starTwinkleSmoothB {
-  0% { opacity: .42; filter: brightness(.8); }
-  40% { opacity: .76; filter: brightness(1.28); }
-  68% { opacity: .54; filter: brightness(.95); }
-  100% { opacity: .82; filter: brightness(1.12); }
+@keyframes clusterFloat {
+  0%   { transform: translate3d(0px, 0px, 0); }
+  50%  { transform: translate3d(4px, -3px, 0); }
+  100% { transform: translate3d(-5px, 4px, 0); }
 }
 
 @keyframes shootingDownSmooth {
-  0% { opacity: 0; background-position: -32% -10%, 18% -22%, 78% -14%; }
-  9% { opacity: .92; }
-  74% { opacity: .82; }
-  100% { opacity: 0; background-position: 62% 122%, 92% 118%, 142% 132%; }
+  0%   { opacity: 0; background-position: -26% -8%, 16% -16%, 76% -10%; }
+  10%  { opacity: .98; }
+  70%  { opacity: .88; }
+  100% { opacity: 0; background-position: 62% 116%, 92% 120%, 142% 128%; }
 }
