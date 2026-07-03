@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && cp index.html dist/",
-    "start": "npx serve ."
+    "build": "rm -rf dist && mkdir -p dist && cp -r index.html styles.css assets dist/",
+    "start": "npx serve .",
+    "dev": "npx serve ."
   },
   "devDependencies": {}
 }
