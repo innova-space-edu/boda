@@ -15,8 +15,8 @@
       <p class="sub">Completa tus datos y agrega a cada integrante con su contacto.</p>
 
       <form id="rsvpForm">
-        <label for="confirmante">Nombre completo de quien confirma</label>
-        <input id="confirmante" name="confirmante" type="text" required />
+        <label for="confirmante">Familia de quien confirma</label>
+        <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" required />
 
         <label for="asistencia">¿Asistirás?</label>
         <select id="asistencia" name="asistencia" required>
@@ -29,6 +29,7 @@
         <input id="cantidad" name="cantidad" type="number" min="1" max="20" value="1" required />
 
         <div id="integrantesBox" class="members-box"></div>
+        <button class="mini-button" type="button" id="addMemberBtn">Agregar otro integrante</button>
 
         <label for="telefono">Teléfono o WhatsApp principal</label>
         <input id="telefono" name="telefono" type="tel" required />
@@ -49,14 +50,23 @@
     const statusText = document.getElementById("status");
     const cantidadInput = document.getElementById("cantidad");
     const integrantesBox = document.getElementById("integrantesBox");
+    const addMemberBtn = document.getElementById("addMemberBtn");
+
+    function currentMembers() {
+      const names = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value; });
+      const phones = Array.from(document.querySelectorAll('input[name="integrante_contacto"]')).map(function(input){ return input.value; });
+      return { names: names, phones: phones };
+    }
 
     function renderIntegrantes() {
+      const previous = currentMembers();
       const total = Math.max(1, Math.min(20, Number(cantidadInput.value || 1)));
+      cantidadInput.value = total;
       integrantesBox.innerHTML = "";
 
       const title = document.createElement("p");
       title.className = "members-title";
-      title.textContent = "Integrantes";
+      title.textContent = "Integrantes y contactos";
       integrantesBox.appendChild(title);
 
       for (let i = 1; i <= total; i++) {
@@ -73,6 +83,7 @@
         nameInput.type = "text";
         nameInput.placeholder = "Nombre y apellido";
         nameInput.required = true;
+        nameInput.value = previous.names[i - 1] || "";
 
         const phoneLabel = document.createElement("label");
         phoneLabel.textContent = "Contacto del integrante " + i;
@@ -83,6 +94,7 @@
         phoneInput.name = "integrante_contacto";
         phoneInput.type = "tel";
         phoneInput.placeholder = "WhatsApp o teléfono";
+        phoneInput.value = previous.phones[i - 1] || "";
 
         item.appendChild(nameLabel);
         item.appendChild(nameInput);
@@ -93,6 +105,11 @@
     }
 
     cantidadInput.addEventListener("input", renderIntegrantes);
+    addMemberBtn.addEventListener("click", function(){
+      const total = Math.max(1, Math.min(20, Number(cantidadInput.value || 1) + 1));
+      cantidadInput.value = total;
+      renderIntegrantes();
+    });
     renderIntegrantes();
 
     form.addEventListener("submit", async (event) => {
@@ -138,6 +155,7 @@
       }
 
       form.reset();
+      cantidadInput.value = 1;
       renderIntegrantes();
       statusText.textContent = "Confirmación enviada. Muchas gracias.";
     });
