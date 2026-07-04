@@ -12,11 +12,11 @@
   <main class="detail-page">
     <section class="detail-card">
       <h1 class="script-title">Confirmar asistencia</h1>
-      <p class="sub">Completa tus datos para confirmar tu asistencia a nuestro matrimonio.</p>
+      <p class="sub">Completa tus datos y agrega a cada integrante con su contacto.</p>
 
       <form id="rsvpForm">
-        <label for="nombre">Nombre completo de quien confirma</label>
-        <input id="nombre" name="nombre" type="text" required />
+        <label for="confirmante">Nombre completo de quien confirma</label>
+        <input id="confirmante" name="confirmante" type="text" required />
 
         <label for="asistencia">¿Asistirás?</label>
         <select id="asistencia" name="asistencia" required>
@@ -26,13 +26,12 @@
         </select>
 
         <label for="cantidad">Cantidad de asistentes</label>
-        <input id="cantidad" name="cantidad" type="number" min="1" value="1" required />
+        <input id="cantidad" name="cantidad" type="number" min="1" max="20" value="1" required />
 
-        <label for="integrantes">Nombre y apellido de cada integrante</label>
-        <textarea id="integrantes" name="integrantes" placeholder="Ejemplo:&#10;1. Nombre Apellido&#10;2. Nombre Apellido" required></textarea>
+        <div id="integrantesBox" class="members-box"></div>
 
-        <label for="telefono">Teléfono o WhatsApp</label>
-        <input id="telefono" name="telefono" type="tel" />
+        <label for="telefono">Teléfono o WhatsApp principal</label>
+        <input id="telefono" name="telefono" type="tel" required />
 
         <label for="mensaje">Mensaje para los novios</label>
         <textarea id="mensaje" name="mensaje"></textarea>
@@ -48,6 +47,53 @@
   <script>
     const form = document.getElementById("rsvpForm");
     const statusText = document.getElementById("status");
+    const cantidadInput = document.getElementById("cantidad");
+    const integrantesBox = document.getElementById("integrantesBox");
+
+    function renderIntegrantes() {
+      const total = Math.max(1, Math.min(20, Number(cantidadInput.value || 1)));
+      integrantesBox.innerHTML = "";
+
+      const title = document.createElement("p");
+      title.className = "members-title";
+      title.textContent = "Integrantes";
+      integrantesBox.appendChild(title);
+
+      for (let i = 1; i <= total; i++) {
+        const item = document.createElement("div");
+        item.className = "member-entry";
+
+        const nameLabel = document.createElement("label");
+        nameLabel.textContent = "Integrante " + i + " - nombre y apellido";
+        nameLabel.setAttribute("for", "integrante_nombre_" + i);
+
+        const nameInput = document.createElement("input");
+        nameInput.id = "integrante_nombre_" + i;
+        nameInput.name = "integrante_nombre";
+        nameInput.type = "text";
+        nameInput.placeholder = "Nombre y apellido";
+        nameInput.required = true;
+
+        const phoneLabel = document.createElement("label");
+        phoneLabel.textContent = "Contacto del integrante " + i;
+        phoneLabel.setAttribute("for", "integrante_contacto_" + i);
+
+        const phoneInput = document.createElement("input");
+        phoneInput.id = "integrante_contacto_" + i;
+        phoneInput.name = "integrante_contacto";
+        phoneInput.type = "tel";
+        phoneInput.placeholder = "WhatsApp o teléfono";
+
+        item.appendChild(nameLabel);
+        item.appendChild(nameInput);
+        item.appendChild(phoneLabel);
+        item.appendChild(phoneInput);
+        integrantesBox.appendChild(item);
+      }
+    }
+
+    cantidadInput.addEventListener("input", renderIntegrantes);
+    renderIntegrantes();
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -59,25 +105,40 @@
       }
 
       const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-      const integrantes = form.integrantes.value.split("\n").map((item) => item.trim()).filter(Boolean);
-      const data = {
-        nombre: form.nombre.value.trim(),
-        asistencia: form.asistencia.value,
-        cantidad: Number(form.cantidad.value),
-        integrantes: integrantes,
-        telefono: form.telefono.value.trim(),
-        mensaje: form.mensaje.value.trim()
-      };
+      const confirmante = form.confirmante.value.trim();
+      const telefonoPrincipal = form.telefono.value.trim();
+      const nombres = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value.trim(); });
+      const contactos = Array.from(document.querySelectorAll('input[name="integrante_contacto"]')).map(function(input){ return input.value.trim(); });
+      const grupoId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
 
-      const { error } = await supabaseClient.from("invitados").insert([data]);
+      const rows = nombres.filter(Boolean).map(function(nombre, index){
+        return {
+          nombre: nombre,
+          asistencia: form.asistencia.value,
+          cantidad: 1,
+          confirmante: confirmante,
+          telefono: telefonoPrincipal,
+          contacto_integrante: contactos[index] || telefonoPrincipal,
+          mensaje: form.mensaje.value.trim(),
+          grupo_id: grupoId
+        };
+      });
 
-      if (error) {
-        console.error(error);
-        statusText.textContent = "No se pudo enviar. Intenta nuevamente.";
+      if (!rows.length) {
+        statusText.textContent = "Agrega al menos un integrante.";
+        return;
+      }
+
+      const result = await supabaseClient.from("invitados").insert(rows);
+
+      if (result.error) {
+        console.error(result.error);
+        statusText.textContent = "No se pudo enviar. Revisa las políticas de Supabase.";
         return;
       }
 
       form.reset();
+      renderIntegrantes();
       statusText.textContent = "Confirmación enviada. Muchas gracias.";
     });
   </script>
