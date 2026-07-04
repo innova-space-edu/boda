@@ -12,7 +12,7 @@
   <main class="detail-page">
     <section class="detail-card">
       <h1 class="script-title">Administrador</h1>
-      <p class="sub">Panel para revisar visitas, confirmaciones, asistentes y contactos.</p>
+      <p class="sub">Panel para revisar todos los campos rellenados en el formulario.</p>
 
       <div id="loginBox">
         <label for="adminEmail">Correo administrador</label>
@@ -107,15 +107,17 @@
         title.textContent = r.nombre || "Sin nombre";
         card.appendChild(title);
 
-        textLine(card, "Confirmado por", r.confirmante || r.nombre || "");
-        textLine(card, "Asistencia", r.asistencia || "");
-        textLine(card, "Contacto integrante", r.contacto_integrante || r.telefono || "Sin teléfono");
-        textLine(card, "Teléfono principal", r.telefono || "Sin teléfono");
-        textLine(card, "Mensaje", r.mensaje || "");
+        textLine(card, "Familia de quien confirma", r.confirmante || "");
+        textLine(card, "¿Asistirán?", r.asistencia || "");
+        textLine(card, "Cantidad de asistentes", "1");
+        textLine(card, "Nombre y apellido del integrante", r.nombre || "");
+        textLine(card, "Contacto del integrante", r.contacto_integrante || r.telefono || "Sin contacto");
+        textLine(card, "Mensaje para los novios", r.mensaje || "");
+        textLine(card, "Grupo de confirmación", r.grupo_id || "");
 
         const fecha = document.createElement("p");
         fecha.className = "small-muted";
-        fecha.textContent = r.created_at ? new Date(r.created_at).toLocaleString("es-CL") : "";
+        fecha.textContent = r.created_at ? "Fecha de registro: " + new Date(r.created_at).toLocaleString("es-CL") : "";
         card.appendChild(fecha);
 
         const phone = cleanPhone(r.contacto_integrante || r.telefono);
