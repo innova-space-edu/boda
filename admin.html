@@ -17,6 +17,10 @@
       <div id="loginBox">
         <label for="adminEmail">Correo administrador</label>
         <input id="adminEmail" type="email" placeholder="correo administrador" />
+
+        <label for="adminPassword">Contraseña</label>
+        <input id="adminPassword" type="password" placeholder="contraseña" />
+
         <button class="green-button" type="button" id="loginBtn">Ingresar</button>
         <p class="status" id="loginStatus"></p>
       </div>
@@ -43,7 +47,14 @@
     const adminPanel = document.getElementById("adminPanel");
     const loginStatus = document.getElementById("loginStatus");
     const emailInput = document.getElementById("adminEmail");
+    const passwordInput = document.getElementById("adminPassword");
     const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    function showPanel() {
+      loginBox.classList.add("hidden");
+      adminPanel.classList.remove("hidden");
+      loadAdminData();
+    }
 
     async function loadAdminData() {
       const visitas = await client.from("invitacion_visitas").select("id", { count: "exact", head: true });
@@ -60,11 +71,24 @@
 
       const list = document.getElementById("guestList");
       list.innerHTML = "";
+
+      if (!rows.length) {
+        list.innerHTML = "<p class='status'>Aún no hay confirmaciones.</p>";
+        return;
+      }
+
       rows.forEach(function(r){
         const card = document.createElement("article");
         card.className = "guest-card";
         const integrantes = Array.isArray(r.integrantes) ? r.integrantes.join(", ") : (r.integrantes || "Sin detalle");
-        card.textContent = (r.nombre || "Sin nombre") + " | " + (r.asistencia || "") + " | " + (r.cantidad || 0) + " asistentes | " + integrantes;
+        const fecha = r.created_at ? new Date(r.created_at).toLocaleString("es-CL") : "";
+        card.innerHTML = "<h3>" + (r.nombre || "Sin nombre") + "</h3>" +
+          "<p><strong>Asistencia:</strong> " + (r.asistencia || "") + "</p>" +
+          "<p><strong>Cantidad:</strong> " + (r.cantidad || 0) + "</p>" +
+          "<p><strong>Integrantes:</strong> " + integrantes + "</p>" +
+          "<p><strong>Teléfono:</strong> " + (r.telefono || "") + "</p>" +
+          "<p><strong>Mensaje:</strong> " + (r.mensaje || "") + "</p>" +
+          "<p class='small-muted'>" + fecha + "</p>";
         list.appendChild(card);
       });
     }
@@ -73,20 +97,39 @@
       const sessionData = await client.auth.getSession();
       const session = sessionData.data.session;
       if (session && session.user && session.user.email === ADMIN_EMAIL) {
-        loginBox.classList.add("hidden");
-        adminPanel.classList.remove("hidden");
-        loadAdminData();
+        showPanel();
       }
     }
 
     document.getElementById("loginBtn").addEventListener("click", async function(){
       const email = emailInput.value.trim().toLowerCase();
+      const password = passwordInput.value;
+
       if (email !== ADMIN_EMAIL) {
         loginStatus.textContent = "Correo no autorizado.";
         return;
       }
-      const result = await client.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } });
-      loginStatus.textContent = result.error ? "No se pudo enviar el acceso." : "Revisa tu correo para ingresar.";
+
+      if (!password) {
+        loginStatus.textContent = "Ingresa la contraseña.";
+        return;
+      }
+
+      loginStatus.textContent = "Ingresando...";
+      const result = await client.auth.signInWithPassword({ email: email, password: password });
+
+      if (result.error) {
+        loginStatus.textContent = "Correo o contraseña incorrectos.";
+        return;
+      }
+
+      if (!result.data.user || result.data.user.email !== ADMIN_EMAIL) {
+        await client.auth.signOut();
+        loginStatus.textContent = "Usuario no autorizado.";
+        return;
+      }
+
+      showPanel();
     });
 
     document.getElementById("refreshBtn").addEventListener("click", loadAdminData);
