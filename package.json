@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "rm -rf out && mkdir -p out && cp -r index.html styles.css assets out/",
-    "start": "npx serve .",
-    "dev": "npx serve ."
+    "build": "rm -rf out && mkdir -p out && cp -r *.html styles.css assets out/ && node build.js"
   },
   "devDependencies": {}
 }
