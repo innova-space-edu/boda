@@ -28,7 +28,7 @@
       <div id="adminPanel" class="hidden">
         <div class="stats-grid">
           <div class="stat-card"><div class="stat-number" id="visitasCount">0</div><div class="stat-label">Visitas</div></div>
-          <div class="stat-card"><div class="stat-number" id="confirmadosCount">0</div><div class="stat-label">Confirmaciones</div></div>
+          <div class="stat-card"><div class="stat-number" id="confirmadosCount">0</div><div class="stat-label">Grupos confirmados</div></div>
           <div class="stat-card"><div class="stat-number" id="asistentesCount">0</div><div class="stat-label">Asistentes</div></div>
           <div class="stat-card"><div class="stat-number" id="noAsistenCount">0</div><div class="stat-label">No asisten</div></div>
         </div>
@@ -84,11 +84,11 @@
       const rows = invitados.data || [];
       const confirmados = rows.filter(function(r){ return r.asistencia === "Sí asistiré"; });
       const noAsisten = rows.filter(function(r){ return r.asistencia === "No podré asistir"; });
-      const asistentes = confirmados.reduce(function(total, r){ return total + Number(r.cantidad || 0); }, 0);
+      const grupos = new Set(rows.map(function(r){ return r.grupo_id || r.confirmante || r.id; }));
 
       document.getElementById("visitasCount").textContent = visitas.count || 0;
-      document.getElementById("confirmadosCount").textContent = confirmados.length;
-      document.getElementById("asistentesCount").textContent = asistentes;
+      document.getElementById("confirmadosCount").textContent = grupos.size;
+      document.getElementById("asistentesCount").textContent = confirmados.length;
       document.getElementById("noAsistenCount").textContent = noAsisten.length;
 
       const list = document.getElementById("guestList");
@@ -107,31 +107,10 @@
         title.textContent = r.nombre || "Sin nombre";
         card.appendChild(title);
 
+        textLine(card, "Confirmado por", r.confirmante || r.nombre || "");
         textLine(card, "Asistencia", r.asistencia || "");
-        textLine(card, "Cantidad", String(r.cantidad || 0));
-
-        const integrantes = Array.isArray(r.integrantes) ? r.integrantes : String(r.integrantes || "").split("\n").filter(Boolean);
-        const integrantesBox = document.createElement("div");
-        integrantesBox.className = "member-list";
-        const integrantesTitle = document.createElement("p");
-        integrantesTitle.innerHTML = "<strong>Asistentes registrados:</strong>";
-        integrantesBox.appendChild(integrantesTitle);
-        if (integrantes.length) {
-          const ul = document.createElement("ul");
-          integrantes.forEach(function(nombre){
-            const li = document.createElement("li");
-            li.textContent = nombre;
-            ul.appendChild(li);
-          });
-          integrantesBox.appendChild(ul);
-        } else {
-          const empty = document.createElement("p");
-          empty.textContent = "Sin detalle";
-          integrantesBox.appendChild(empty);
-        }
-        card.appendChild(integrantesBox);
-
-        textLine(card, "Teléfono", r.telefono || "Sin teléfono");
+        textLine(card, "Contacto integrante", r.contacto_integrante || r.telefono || "Sin teléfono");
+        textLine(card, "Teléfono principal", r.telefono || "Sin teléfono");
         textLine(card, "Mensaje", r.mensaje || "");
 
         const fecha = document.createElement("p");
@@ -139,7 +118,7 @@
         fecha.textContent = r.created_at ? new Date(r.created_at).toLocaleString("es-CL") : "";
         card.appendChild(fecha);
 
-        const phone = cleanPhone(r.telefono);
+        const phone = cleanPhone(r.contacto_integrante || r.telefono);
         if (phone) {
           const whatsapp = document.createElement("a");
           whatsapp.className = "whatsapp-button";
