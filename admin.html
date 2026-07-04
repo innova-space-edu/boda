@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Administrador | Carolina & Esthefano</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+</head>
+<body>
+  <main class="detail-page">
+    <section class="detail-card">
+      <h1 class="script-title">Administrador</h1>
+      <p class="sub">Panel para revisar visitas y confirmaciones.</p>
+
+      <div id="loginBox">
+        <label for="adminEmail">Correo administrador</label>
+        <input id="adminEmail" type="email" placeholder="correo administrador" />
+        <button class="green-button" type="button" id="loginBtn">Ingresar</button>
+        <p class="status" id="loginStatus"></p>
+      </div>
+
+      <div id="adminPanel" class="hidden">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-number" id="visitasCount">0</div><div class="stat-label">Visitas</div></div>
+          <div class="stat-card"><div class="stat-number" id="confirmadosCount">0</div><div class="stat-label">Confirmaciones</div></div>
+          <div class="stat-card"><div class="stat-number" id="asistentesCount">0</div><div class="stat-label">Asistentes</div></div>
+          <div class="stat-card"><div class="stat-number" id="noAsistenCount">0</div><div class="stat-label">No asisten</div></div>
+        </div>
+        <button class="green-button" type="button" id="refreshBtn">Actualizar</button>
+        <button class="green-button" type="button" id="logoutBtn">Cerrar sesión</button>
+        <div class="admin-list" id="guestList"></div>
+      </div>
+
+      <a class="back-link" href="index.html">Volver a la invitación</a>
+    </section>
+  </main>
+
+  <script>
+    const ADMIN_EMAIL = "sthefanomc@gmail.com";
+    const loginBox = document.getElementById("loginBox");
+    const adminPanel = document.getElementById("adminPanel");
+    const loginStatus = document.getElementById("loginStatus");
+    const emailInput = document.getElementById("adminEmail");
+    const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    async function loadAdminData() {
+      const visitas = await client.from("invitacion_visitas").select("id", { count: "exact", head: true });
+      const invitados = await client.from("invitados").select("*").order("created_at", { ascending: false });
+      const rows = invitados.data || [];
+      const confirmados = rows.filter(function(r){ return r.asistencia === "Sí asistiré"; });
+      const noAsisten = rows.filter(function(r){ return r.asistencia === "No podré asistir"; });
+      const asistentes = confirmados.reduce(function(total, r){ return total + Number(r.cantidad || 0); }, 0);
+
+      document.getElementById("visitasCount").textContent = visitas.count || 0;
+      document.getElementById("confirmadosCount").textContent = confirmados.length;
+      document.getElementById("asistentesCount").textContent = asistentes;
+      document.getElementById("noAsistenCount").textContent = noAsisten.length;
+
+      const list = document.getElementById("guestList");
+      list.innerHTML = "";
+      rows.forEach(function(r){
+        const card = document.createElement("article");
+        card.className = "guest-card";
+        const integrantes = Array.isArray(r.integrantes) ? r.integrantes.join(", ") : (r.integrantes || "Sin detalle");
+        card.textContent = (r.nombre || "Sin nombre") + " | " + (r.asistencia || "") + " | " + (r.cantidad || 0) + " asistentes | " + integrantes;
+        list.appendChild(card);
+      });
+    }
+
+    async function checkSession() {
+      const sessionData = await client.auth.getSession();
+      const session = sessionData.data.session;
+      if (session && session.user && session.user.email === ADMIN_EMAIL) {
+        loginBox.classList.add("hidden");
+        adminPanel.classList.remove("hidden");
+        loadAdminData();
+      }
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", async function(){
+      const email = emailInput.value.trim().toLowerCase();
+      if (email !== ADMIN_EMAIL) {
+        loginStatus.textContent = "Correo no autorizado.";
+        return;
+      }
+      const result = await client.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.href } });
+      loginStatus.textContent = result.error ? "No se pudo enviar el acceso." : "Revisa tu correo para ingresar.";
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", loadAdminData);
+    document.getElementById("logoutBtn").addEventListener("click", async function(){ await client.auth.signOut(); window.location.reload(); });
+    checkSession();
+  </script>
+</body>
+</html>
