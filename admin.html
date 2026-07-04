@@ -12,7 +12,7 @@
   <main class="detail-page">
     <section class="detail-card">
       <h1 class="script-title">Administrador</h1>
-      <p class="sub">Panel para revisar visitas y confirmaciones.</p>
+      <p class="sub">Panel para revisar visitas, confirmaciones, asistentes y contactos.</p>
 
       <div id="loginBox">
         <label for="adminEmail">Correo administrador</label>
@@ -56,6 +56,28 @@
       loadAdminData();
     }
 
+    function cleanPhone(phone) {
+      let number = String(phone || "").replace(/\D/g, "");
+      if (!number) return "";
+      if (number.startsWith("56")) return number;
+      if (number.length === 9 && number.startsWith("9")) return "56" + number;
+      if (number.length === 8) return "569" + number;
+      return number;
+    }
+
+    function defaultMessage(name) {
+      return "Hola " + (name || "") + ", somos Carolina y Esthefano. Te escribimos por la confirmación de nuestra boda.";
+    }
+
+    function textLine(parent, label, value) {
+      const p = document.createElement("p");
+      const strong = document.createElement("strong");
+      strong.textContent = label + ": ";
+      p.appendChild(strong);
+      p.appendChild(document.createTextNode(value || ""));
+      parent.appendChild(p);
+    }
+
     async function loadAdminData() {
       const visitas = await client.from("invitacion_visitas").select("id", { count: "exact", head: true });
       const invitados = await client.from("invitados").select("*").order("created_at", { ascending: false });
@@ -80,15 +102,54 @@
       rows.forEach(function(r){
         const card = document.createElement("article");
         card.className = "guest-card";
-        const integrantes = Array.isArray(r.integrantes) ? r.integrantes.join(", ") : (r.integrantes || "Sin detalle");
-        const fecha = r.created_at ? new Date(r.created_at).toLocaleString("es-CL") : "";
-        card.innerHTML = "<h3>" + (r.nombre || "Sin nombre") + "</h3>" +
-          "<p><strong>Asistencia:</strong> " + (r.asistencia || "") + "</p>" +
-          "<p><strong>Cantidad:</strong> " + (r.cantidad || 0) + "</p>" +
-          "<p><strong>Integrantes:</strong> " + integrantes + "</p>" +
-          "<p><strong>Teléfono:</strong> " + (r.telefono || "") + "</p>" +
-          "<p><strong>Mensaje:</strong> " + (r.mensaje || "") + "</p>" +
-          "<p class='small-muted'>" + fecha + "</p>";
+
+        const title = document.createElement("h3");
+        title.textContent = r.nombre || "Sin nombre";
+        card.appendChild(title);
+
+        textLine(card, "Asistencia", r.asistencia || "");
+        textLine(card, "Cantidad", String(r.cantidad || 0));
+
+        const integrantes = Array.isArray(r.integrantes) ? r.integrantes : String(r.integrantes || "").split("\n").filter(Boolean);
+        const integrantesBox = document.createElement("div");
+        integrantesBox.className = "member-list";
+        const integrantesTitle = document.createElement("p");
+        integrantesTitle.innerHTML = "<strong>Asistentes registrados:</strong>";
+        integrantesBox.appendChild(integrantesTitle);
+        if (integrantes.length) {
+          const ul = document.createElement("ul");
+          integrantes.forEach(function(nombre){
+            const li = document.createElement("li");
+            li.textContent = nombre;
+            ul.appendChild(li);
+          });
+          integrantesBox.appendChild(ul);
+        } else {
+          const empty = document.createElement("p");
+          empty.textContent = "Sin detalle";
+          integrantesBox.appendChild(empty);
+        }
+        card.appendChild(integrantesBox);
+
+        textLine(card, "Teléfono", r.telefono || "Sin teléfono");
+        textLine(card, "Mensaje", r.mensaje || "");
+
+        const fecha = document.createElement("p");
+        fecha.className = "small-muted";
+        fecha.textContent = r.created_at ? new Date(r.created_at).toLocaleString("es-CL") : "";
+        card.appendChild(fecha);
+
+        const phone = cleanPhone(r.telefono);
+        if (phone) {
+          const whatsapp = document.createElement("a");
+          whatsapp.className = "whatsapp-button";
+          whatsapp.href = "https://wa.me/" + phone + "?text=" + encodeURIComponent(defaultMessage(r.nombre));
+          whatsapp.target = "_blank";
+          whatsapp.rel = "noopener noreferrer";
+          whatsapp.textContent = "Enviar mensaje por WhatsApp";
+          card.appendChild(whatsapp);
+        }
+
         list.appendChild(card);
       });
     }
