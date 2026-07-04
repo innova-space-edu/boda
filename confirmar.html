@@ -12,13 +12,13 @@
   <main class="detail-page">
     <section class="detail-card">
       <h1 class="script-title">Confirmar asistencia</h1>
-      <p class="sub">Completa tus datos y agrega a cada integrante con su contacto.</p>
+      <p class="sub">Completa los datos de la familia y agrega a cada integrante con su contacto.</p>
 
       <form id="rsvpForm">
         <label for="confirmante">Familia de quien confirma</label>
         <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" required />
 
-        <label for="asistencia">¿Asistirás?</label>
+        <label for="asistencia">¿Asistirán?</label>
         <select id="asistencia" name="asistencia" required>
           <option value="">Selecciona una opción</option>
           <option value="Sí asistiré">Sí asistiré</option>
@@ -30,9 +30,6 @@
 
         <div id="integrantesBox" class="members-box"></div>
         <button class="mini-button" type="button" id="addMemberBtn">Agregar otro integrante</button>
-
-        <label for="telefono">Teléfono o WhatsApp principal</label>
-        <input id="telefono" name="telefono" type="tel" required />
 
         <label for="mensaje">Mensaje para los novios</label>
         <textarea id="mensaje" name="mensaje"></textarea>
@@ -123,7 +120,6 @@
 
       const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       const confirmante = form.confirmante.value.trim();
-      const telefonoPrincipal = form.telefono.value.trim();
       const nombres = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value.trim(); });
       const contactos = Array.from(document.querySelectorAll('input[name="integrante_contacto"]')).map(function(input){ return input.value.trim(); });
       const grupoId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
@@ -134,8 +130,8 @@
           asistencia: form.asistencia.value,
           cantidad: 1,
           confirmante: confirmante,
-          telefono: telefonoPrincipal,
-          contacto_integrante: contactos[index] || telefonoPrincipal,
+          telefono: contactos[index] || "",
+          contacto_integrante: contactos[index] || "",
           mensaje: form.mensaje.value.trim(),
           grupo_id: grupoId
         };
