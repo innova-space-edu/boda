@@ -15,7 +15,7 @@
       <p class="sub">Completa tus datos para confirmar tu asistencia a nuestro matrimonio.</p>
 
       <form id="rsvpForm">
-        <label for="nombre">Nombre completo</label>
+        <label for="nombre">Nombre completo de quien confirma</label>
         <input id="nombre" name="nombre" type="text" required />
 
         <label for="asistencia">¿Asistirás?</label>
@@ -27,6 +27,9 @@
 
         <label for="cantidad">Cantidad de asistentes</label>
         <input id="cantidad" name="cantidad" type="number" min="1" value="1" required />
+
+        <label for="integrantes">Nombre y apellido de cada integrante</label>
+        <textarea id="integrantes" name="integrantes" placeholder="Ejemplo:&#10;1. Nombre Apellido&#10;2. Nombre Apellido" required></textarea>
 
         <label for="telefono">Teléfono o WhatsApp</label>
         <input id="telefono" name="telefono" type="tel" />
@@ -56,12 +59,14 @@
       }
 
       const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      const integrantes = form.integrantes.value.split("\n").map((item) => item.trim()).filter(Boolean);
       const data = {
-        nombre: form.nombre.value,
+        nombre: form.nombre.value.trim(),
         asistencia: form.asistencia.value,
         cantidad: Number(form.cantidad.value),
-        telefono: form.telefono.value,
-        mensaje: form.mensaje.value
+        integrantes: integrantes,
+        telefono: form.telefono.value.trim(),
+        mensaje: form.mensaje.value.trim()
       };
 
       const { error } = await supabaseClient.from("invitados").insert([data]);
