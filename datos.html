@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Datos bancarios | Carolina & Esthefano</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="detail-page">
+    <section class="detail-card">
+      <div>♡</div>
+      <h1 class="script-title">Lluvia de sobres</h1>
+      <p class="sub">Nuestro mejor regalo es tu presencia. Si deseas hacernos un donativo, puedes hacerlo mediante depósito a cuenta bancaria.</p>
+
+      <div class="bank-box" id="datosBancarios">
+        <div class="bank-row"><strong>Banco</strong>COMPLETAR BANCO</div>
+        <div class="bank-row"><strong>Tipo de cuenta</strong>COMPLETAR TIPO DE CUENTA</div>
+        <div class="bank-row"><strong>Número de cuenta</strong>COMPLETAR NUMERO DE CUENTA</div>
+        <div class="bank-row"><strong>Nombre</strong>COMPLETAR NOMBRE</div>
+        <div class="bank-row"><strong>RUT</strong>COMPLETAR RUT</div>
+      </div>
+
+      <button class="green-button" type="button" onclick="copiarDatos()">Copiar datos bancarios</button>
+      <a class="back-link" href="index.html">Volver a la invitación</a>
+    </section>
+  </main>
+
+  <script>
+    function copiarDatos() {
+      const datos = document.getElementById("datosBancarios").innerText;
+      navigator.clipboard.writeText(datos).then(() => {
+        alert("Datos bancarios copiados.");
+      });
+    }
+  </script>
+</body>
+</html>
