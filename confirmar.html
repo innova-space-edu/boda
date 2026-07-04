@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Confirmar asistencia | Carolina & Esthefano</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+</head>
+<body>
+  <main class="detail-page">
+    <section class="detail-card">
+      <h1 class="script-title">Confirmar asistencia</h1>
+      <p class="sub">Completa tus datos para confirmar tu asistencia a nuestro matrimonio.</p>
+
+      <form id="rsvpForm">
+        <label for="nombre">Nombre completo</label>
+        <input id="nombre" name="nombre" type="text" required />
+
+        <label for="asistencia">¿Asistirás?</label>
+        <select id="asistencia" name="asistencia" required>
+          <option value="">Selecciona una opción</option>
+          <option value="Sí asistiré">Sí asistiré</option>
+          <option value="No podré asistir">No podré asistir</option>
+        </select>
+
+        <label for="cantidad">Cantidad de asistentes</label>
+        <input id="cantidad" name="cantidad" type="number" min="1" value="1" required />
+
+        <label for="telefono">Teléfono o WhatsApp</label>
+        <input id="telefono" name="telefono" type="tel" />
+
+        <label for="mensaje">Mensaje para los novios</label>
+        <textarea id="mensaje" name="mensaje"></textarea>
+
+        <button class="green-button" type="submit">Enviar confirmación</button>
+        <p class="status" id="status"></p>
+      </form>
+
+      <a class="back-link" href="index.html">Volver a la invitación</a>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("rsvpForm");
+    const statusText = document.getElementById("status");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      statusText.textContent = "Enviando confirmación...";
+
+      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+        statusText.textContent = "Falta configurar Supabase.";
+        return;
+      }
+
+      const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      const data = {
+        nombre: form.nombre.value,
+        asistencia: form.asistencia.value,
+        cantidad: Number(form.cantidad.value),
+        telefono: form.telefono.value,
+        mensaje: form.mensaje.value
+      };
+
+      const { error } = await supabaseClient.from("invitados").insert([data]);
+
+      if (error) {
+        console.error(error);
+        statusText.textContent = "No se pudo enviar. Intenta nuevamente.";
+        return;
+      }
+
+      form.reset();
+      statusText.textContent = "Confirmación enviada. Muchas gracias.";
+    });
+  </script>
+</body>
+</html>
