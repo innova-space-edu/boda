@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "rm -rf dist && mkdir -p dist && cp -r index.html styles.css assets dist/",
+    "build": "rm -rf out && mkdir -p out && cp -r index.html styles.css assets out/",
     "start": "npx serve .",
     "dev": "npx serve ."
   },
