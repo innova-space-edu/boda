@@ -10,12 +10,12 @@ Base limpia para invitación digital vertical con scroll.
 
 ## Cloudflare Pages
 
-Configuración recomendada si Cloudflare pide build:
+Configuración recomendada:
 
 - Build command: `npm run build`
-- Output directory: `dist`
+- Output directory: `out`
 
-Si Cloudflare está configurado como sitio estático sin build, también puede servir directamente desde la raíz.
+El build copia la página estática completa dentro de `out`, que es la carpeta que Cloudflare está esperando en este despliegue.
 
 ## Próximo paso
 
