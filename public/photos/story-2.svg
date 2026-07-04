@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900" viewBox="0 0 700 900">
-  <rect width="700" height="900" fill="#efe5fb"/>
-  <rect x="40" y="40" width="620" height="820" rx="40" fill="#fffaf2" stroke="#b98729" stroke-width="4"/>
-  <path d="M220 360c70-90 190-90 260 0" fill="none" stroke="#7b4c9e" stroke-width="20" stroke-linecap="round" opacity=".35"/>
-  <text x="350" y="520" text-anchor="middle" font-family="Georgia" font-size="42" fill="#7c5512">Foto editable</text>
-  <text x="350" y="585" text-anchor="middle" font-family="Georgia" font-size="30" fill="#6d625d">Momentos juntos</text>
-</svg>

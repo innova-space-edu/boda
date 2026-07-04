@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1100" viewBox="0 0 900 1100">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#efe5fb"/><stop offset="1" stop-color="#fffaf2"/></linearGradient></defs>
-  <rect width="900" height="1100" fill="url(#bg)"/>
-  <rect x="80" y="80" width="740" height="940" rx="60" fill="rgba(255,255,255,.5)" stroke="#b98729" stroke-width="5" opacity=".75"/>
-  <circle cx="450" cy="370" r="145" fill="#fffaf2" stroke="#7b4c9e" stroke-width="3" opacity=".85"/>
-  <path d="M450 220v300M310 370h280" stroke="#b98729" stroke-width="18" stroke-linecap="round" opacity=".75"/>
-  <text x="450" y="700" text-anchor="middle" font-family="Georgia" font-size="52" fill="#7c5512">Imagen editable</text>
-  <text x="450" y="770" text-anchor="middle" font-family="Georgia" font-size="34" fill="#6d625d">Significado de la boda</text>
-</svg>
