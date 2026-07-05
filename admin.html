@@ -8,11 +8,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
 </head>
-<body>
-  <main class="detail-page">
-    <section class="detail-card">
+<body class="admin-body">
+  <main class="admin-page">
+    <section class="admin-card">
       <h1 class="script-title">Administrador</h1>
-      <p class="sub">Panel para revisar todos los campos rellenados en el formulario.</p>
+      <p class="sub">Panel ordenado por familias, asistentes y estado de confirmación.</p>
 
       <div id="loginBox">
         <label for="adminEmail">Correo administrador</label>
@@ -26,15 +26,41 @@
       </div>
 
       <div id="adminPanel" class="hidden">
-        <div class="stats-grid">
+        <div class="stats-grid admin-stats">
           <div class="stat-card"><div class="stat-number" id="visitasCount">0</div><div class="stat-label">Visitas</div></div>
-          <div class="stat-card"><div class="stat-number" id="confirmadosCount">0</div><div class="stat-label">Grupos confirmados</div></div>
+          <div class="stat-card"><div class="stat-number" id="confirmadosCount">0</div><div class="stat-label">Familias</div></div>
           <div class="stat-card"><div class="stat-number" id="asistentesCount">0</div><div class="stat-label">Asistentes</div></div>
           <div class="stat-card"><div class="stat-number" id="noAsistenCount">0</div><div class="stat-label">No asisten</div></div>
         </div>
-        <button class="green-button" type="button" id="refreshBtn">Actualizar</button>
-        <button class="green-button" type="button" id="logoutBtn">Cerrar sesión</button>
-        <div class="admin-list" id="guestList"></div>
+
+        <div class="admin-actions">
+          <button class="green-button" type="button" id="refreshBtn">Actualizar</button>
+          <button class="green-button" type="button" id="logoutBtn">Cerrar sesión</button>
+        </div>
+
+        <div class="admin-section">
+          <h2>Resumen por familia</h2>
+          <div id="familyList"></div>
+        </div>
+
+        <div class="admin-section">
+          <h2>Listado completo de asistentes</h2>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Familia</th>
+                  <th>Asistente</th>
+                  <th>Estado</th>
+                  <th>Contacto</th>
+                  <th>Mensaje</th>
+                  <th>WhatsApp</th>
+                </tr>
+              </thead>
+              <tbody id="guestTable"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <a class="back-link" href="index.html">Volver a la invitación</a>
@@ -69,70 +95,131 @@
       return "Hola " + (name || "") + ", somos Carolina y Esthefano. Te escribimos por la confirmación de nuestra boda.";
     }
 
-    function textLine(parent, label, value) {
-      const p = document.createElement("p");
-      const strong = document.createElement("strong");
-      strong.textContent = label + ": ";
-      p.appendChild(strong);
-      p.appendChild(document.createTextNode(value || ""));
-      parent.appendChild(p);
+    function makeWhatsapp(phone, name) {
+      const number = cleanPhone(phone);
+      if (!number) return null;
+      const a = document.createElement("a");
+      a.className = "whatsapp-small";
+      a.href = "https://wa.me/" + number + "?text=" + encodeURIComponent(defaultMessage(name));
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = "Enviar";
+      return a;
+    }
+
+    function normalizeRow(r) {
+      return {
+        familia: r.confirmante || "Sin familia registrada",
+        asistente: r.nombre || "Sin nombre",
+        estado: r.asistencia || "Sin estado",
+        contacto: r.contacto_integrante || r.telefono || "",
+        mensaje: r.mensaje || "",
+        grupo: r.grupo_id || r.confirmante || r.id,
+        fecha: r.created_at || ""
+      };
+    }
+
+    function groupByFamily(rows) {
+      const groups = {};
+      rows.forEach(function(raw){
+        const r = normalizeRow(raw);
+        const key = r.grupo || r.familia;
+        if (!groups[key]) {
+          groups[key] = { familia: r.familia, estado: r.estado, mensaje: r.mensaje, fecha: r.fecha, asistentes: [] };
+        }
+        groups[key].asistentes.push(r);
+      });
+      return Object.values(groups);
+    }
+
+    function renderFamilies(rows) {
+      const container = document.getElementById("familyList");
+      container.innerHTML = "";
+      const families = groupByFamily(rows);
+
+      families.forEach(function(family){
+        const card = document.createElement("article");
+        card.className = "family-card";
+
+        const header = document.createElement("div");
+        header.className = "family-header";
+        header.innerHTML = "<div><h3>" + family.familia + "</h3><p>" + family.estado + "</p></div><span>" + family.asistentes.length + " integrante(s)</span>";
+        card.appendChild(header);
+
+        const table = document.createElement("table");
+        table.className = "mini-table";
+        table.innerHTML = "<thead><tr><th>Asistente</th><th>Contacto</th><th>WhatsApp</th></tr></thead>";
+        const tbody = document.createElement("tbody");
+
+        family.asistentes.forEach(function(person){
+          const tr = document.createElement("tr");
+          const tdName = document.createElement("td");
+          const tdPhone = document.createElement("td");
+          const tdWhatsapp = document.createElement("td");
+          tdName.textContent = person.asistente;
+          tdPhone.textContent = person.contacto || "Sin contacto";
+          const link = makeWhatsapp(person.contacto, person.asistente);
+          tdWhatsapp.appendChild(link || document.createTextNode("-"));
+          tr.appendChild(tdName);
+          tr.appendChild(tdPhone);
+          tr.appendChild(tdWhatsapp);
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        card.appendChild(table);
+
+        if (family.mensaje) {
+          const msg = document.createElement("p");
+          msg.className = "family-message";
+          msg.textContent = "Mensaje: " + family.mensaje;
+          card.appendChild(msg);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById("guestTable");
+      tbody.innerHTML = "";
+      rows.map(normalizeRow).forEach(function(r){
+        const tr = document.createElement("tr");
+        [r.familia, r.asistente, r.estado, r.contacto || "Sin contacto", r.mensaje || "-"].forEach(function(value){
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+        const tdWhatsapp = document.createElement("td");
+        const link = makeWhatsapp(r.contacto, r.asistente);
+        tdWhatsapp.appendChild(link || document.createTextNode("-"));
+        tr.appendChild(tdWhatsapp);
+        tbody.appendChild(tr);
+      });
     }
 
     async function loadAdminData() {
       const visitas = await client.from("invitacion_visitas").select("id", { count: "exact", head: true });
       const invitados = await client.from("invitados").select("*").order("created_at", { ascending: false });
       const rows = invitados.data || [];
-      const confirmados = rows.filter(function(r){ return r.asistencia === "Sí asistiré"; });
-      const noAsisten = rows.filter(function(r){ return r.asistencia === "No podré asistir"; });
-      const grupos = new Set(rows.map(function(r){ return r.grupo_id || r.confirmante || r.id; }));
+      const normalized = rows.map(normalizeRow);
+      const confirmados = normalized.filter(function(r){ return r.estado === "Sí asistiré"; });
+      const noAsisten = normalized.filter(function(r){ return r.estado === "No podré asistir"; });
+      const grupos = new Set(normalized.map(function(r){ return r.grupo; }));
 
       document.getElementById("visitasCount").textContent = visitas.count || 0;
       document.getElementById("confirmadosCount").textContent = grupos.size;
       document.getElementById("asistentesCount").textContent = confirmados.length;
       document.getElementById("noAsistenCount").textContent = noAsisten.length;
 
-      const list = document.getElementById("guestList");
-      list.innerHTML = "";
-
       if (!rows.length) {
-        list.innerHTML = "<p class='status'>Aún no hay confirmaciones.</p>";
+        document.getElementById("familyList").innerHTML = "<p class='status'>Aún no hay confirmaciones.</p>";
+        document.getElementById("guestTable").innerHTML = "";
         return;
       }
 
-      rows.forEach(function(r){
-        const card = document.createElement("article");
-        card.className = "guest-card";
-
-        const title = document.createElement("h3");
-        title.textContent = r.nombre || "Sin nombre";
-        card.appendChild(title);
-
-        textLine(card, "Familia de quien confirma", r.confirmante || "");
-        textLine(card, "¿Asistirán?", r.asistencia || "");
-        textLine(card, "Cantidad de asistentes", "1");
-        textLine(card, "Nombre y apellido del integrante", r.nombre || "");
-        textLine(card, "Contacto del integrante", r.contacto_integrante || r.telefono || "Sin contacto");
-        textLine(card, "Mensaje para los novios", r.mensaje || "");
-        textLine(card, "Grupo de confirmación", r.grupo_id || "");
-
-        const fecha = document.createElement("p");
-        fecha.className = "small-muted";
-        fecha.textContent = r.created_at ? "Fecha de registro: " + new Date(r.created_at).toLocaleString("es-CL") : "";
-        card.appendChild(fecha);
-
-        const phone = cleanPhone(r.contacto_integrante || r.telefono);
-        if (phone) {
-          const whatsapp = document.createElement("a");
-          whatsapp.className = "whatsapp-button";
-          whatsapp.href = "https://wa.me/" + phone + "?text=" + encodeURIComponent(defaultMessage(r.nombre));
-          whatsapp.target = "_blank";
-          whatsapp.rel = "noopener noreferrer";
-          whatsapp.textContent = "Enviar mensaje por WhatsApp";
-          card.appendChild(whatsapp);
-        }
-
-        list.appendChild(card);
-      });
+      renderFamilies(rows);
+      renderTable(rows);
     }
 
     async function checkSession() {
