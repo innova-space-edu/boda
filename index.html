@@ -6,14 +6,19 @@
   <meta name="theme-color" content="#f4f1ec" />
   <meta name="description" content="Invitación digital de boda de Carolina Vega Carrera y Esthefano Morales Campaña." />
   <title>Carolina & Esthefano | Invitación digital</title>
+  <link rel="preload" as="image" href="assets/ChatGPT%20Image%2012%20sept%202026,%2004_23_48%20p.m..png" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="intro.css" />
+  <script defer src="intro.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <noscript><style>.intro-stage{display:none!important}.welcome-card{opacity:1!important;transform:none!important;filter:none!important;clip-path:none!important}</style></noscript>
 </head>
 <body class="welcome-active">
   <audio id="weddingMusic" preload="auto" loop playsinline src="assets/cancion-boda.mp3"></audio>
 
   <div id="welcomeScreen" class="welcome-screen" role="dialog" aria-modal="true" aria-label="Portada de la invitación">
+    <div id="introStage" class="intro-stage" aria-hidden="true"></div>
     <div class="welcome-card">
       <img class="welcome-image" src="assets/ChatGPT%20Image%2012%20sept%202026,%2004_23_48%20p.m..png" alt="Carolina y Esthefano - portada de la invitación" />
       <button id="openInvitation" class="welcome-hotspot" style="left:30.1%;top:78.9%;width:34.2%;height:5.1%;" type="button" aria-label="Abrir invitación y comenzar la música">
@@ -26,28 +31,18 @@
 
   <main class="page" aria-label="Invitación digital de boda Carolina y Esthefano">
     <section class="invite-shell">
-
       <div class="invite-part">
         <img class="invite-image" src="assets/parte-1.png" alt="Invitación de boda Carolina y Esthefano - Parte 1" />
       </div>
 
       <div class="invite-part">
         <img class="invite-image" src="assets/parte-2.png" alt="Invitación de boda Carolina y Esthefano - Parte 2" />
-
-        <a
-          class="hotspot ubicacion"
-          href="https://www.google.com/maps/search/?api=1&query=Iglesia%20Catedral%20de%20Antofagasta"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Ver ubicación de la Iglesia Catedral de Antofagasta"
-        ></a>
+        <a class="hotspot ubicacion" href="https://www.google.com/maps/search/?api=1&query=Iglesia%20Catedral%20de%20Antofagasta" target="_blank" rel="noopener noreferrer" aria-label="Ver ubicación de la Iglesia Catedral de Antofagasta"></a>
       </div>
 
       <div class="invite-part">
         <img class="invite-image" src="assets/parte-3.png" alt="Invitación de boda Carolina y Esthefano - Parte 3" />
-
         <a class="hotspot confirmar internal-page" href="confirmar.html" data-title="Confirmar asistencia" aria-label="Confirmar asistencia"></a>
-
         <a class="hotspot ver-datos internal-page" href="datos.html" data-title="Ver datos bancarios" aria-label="Ver datos bancarios"></a>
       </div>
 
