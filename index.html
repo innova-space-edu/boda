@@ -10,9 +10,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
 </head>
-<body>
+<body class="welcome-active">
   <audio id="weddingMusic" preload="auto" loop playsinline src="assets/cancion-boda.mp3"></audio>
-  <button id="musicToggle" class="music-toggle" type="button" aria-label="Activar o pausar música" title="Música">♪</button>
+
+  <div id="welcomeScreen" class="welcome-screen" role="dialog" aria-modal="true" aria-label="Portada de la invitación">
+    <div class="welcome-card">
+      <img class="welcome-image" src="assets/portada-boda.webp" alt="Carolina y Esthefano - portada de la invitación" />
+      <button id="openInvitation" class="welcome-hotspot" type="button" aria-label="Abrir invitación y comenzar la música">
+        <span class="sr-only">Abrir invitación</span>
+      </button>
+    </div>
+  </div>
+
+  <button id="musicToggle" class="music-toggle" type="button" aria-label="Pausar música" title="Música">Ⅱ</button>
 
   <main class="page" aria-label="Invitación digital de boda Carolina y Esthefano">
     <section class="invite-shell">
@@ -55,6 +65,8 @@
   <script>
     const music = document.getElementById("weddingMusic");
     const musicToggle = document.getElementById("musicToggle");
+    const welcomeScreen = document.getElementById("welcomeScreen");
+    const openInvitationButton = document.getElementById("openInvitation");
     const overlay = document.getElementById("pageOverlay");
     const frame = document.getElementById("pageFrame");
     const closeOverlayButton = document.getElementById("closeOverlay");
@@ -65,32 +77,45 @@
       musicToggle.setAttribute("aria-label", music.paused ? "Reproducir música" : "Pausar música");
     }
 
-    async function tryStartMusic() {
+    async function startWeddingMusic() {
       try {
+        music.currentTime = 0;
         await music.play();
       } catch (error) {
-        // Los navegadores pueden bloquear audio con sonido hasta la primera interacción.
+        console.warn("El navegador no permitió iniciar el audio.", error);
       }
       syncMusicButton();
     }
 
+    async function openInvitation() {
+      openInvitationButton.disabled = true;
+      await startWeddingMusic();
+      window.scrollTo({ top: 0, behavior: "auto" });
+      welcomeScreen.classList.add("is-opening");
+      document.body.classList.remove("welcome-active");
+      setTimeout(function() {
+        welcomeScreen.hidden = true;
+      }, 650);
+    }
+
+    openInvitationButton.addEventListener("click", openInvitation);
+
     musicToggle.addEventListener("click", async function() {
       if (music.paused) {
-        await tryStartMusic();
+        try {
+          await music.play();
+        } catch (error) {
+          console.warn("No se pudo reproducir la música.", error);
+        }
       } else {
         music.pause();
-        syncMusicButton();
       }
+      syncMusicButton();
     });
 
-    document.addEventListener("pointerdown", function startOnFirstInteraction() {
-      if (music.paused) tryStartMusic();
-      document.removeEventListener("pointerdown", startOnFirstInteraction);
-    }, { once: true });
-
-    window.addEventListener("load", tryStartMusic);
     music.addEventListener("play", syncMusicButton);
     music.addEventListener("pause", syncMusicButton);
+    syncMusicButton();
 
     function openInternalPage(url) {
       frame.src = url;
