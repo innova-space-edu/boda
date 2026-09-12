@@ -79,10 +79,10 @@
 
     async function startWeddingMusic() {
       try {
-        if (music.currentTime > 0.25) music.currentTime = 0;
+        music.currentTime = 0;
         await music.play();
       } catch (error) {
-        console.warn("El navegador no permitió iniciar el audio automáticamente.", error);
+        console.warn("El navegador no permitió iniciar el audio.", error);
       }
       syncMusicButton();
     }
