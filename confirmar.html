@@ -38,7 +38,7 @@
         <p class="status" id="status"></p>
       </form>
 
-      <a class="back-link" href="index.html">Volver a la invitación</a>
+      <a class="back-link" id="backToInvite" href="index.html">Volver a la invitación</a>
     </section>
   </main>
 
@@ -48,6 +48,14 @@
     const cantidadInput = document.getElementById("cantidad");
     const integrantesBox = document.getElementById("integrantesBox");
     const addMemberBtn = document.getElementById("addMemberBtn");
+    const backToInvite = document.getElementById("backToInvite");
+
+    if (window.parent !== window) {
+      backToInvite.addEventListener("click", function(event) {
+        event.preventDefault();
+        window.parent.postMessage({ type: "closeInviteOverlay" }, window.location.origin);
+      });
+    }
 
     function currentMembers() {
       const names = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value; });

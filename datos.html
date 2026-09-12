@@ -22,11 +22,20 @@
       </div>
 
       <button class="green-button" type="button" onclick="copiarDatos()">Copiar datos bancarios</button>
-      <a class="back-link" href="index.html">Volver a la invitación</a>
+      <a class="back-link" id="backToInvite" href="index.html">Volver a la invitación</a>
     </section>
   </main>
 
   <script>
+    const backToInvite = document.getElementById("backToInvite");
+
+    if (window.parent !== window) {
+      backToInvite.addEventListener("click", function(event) {
+        event.preventDefault();
+        window.parent.postMessage({ type: "closeInviteOverlay" }, window.location.origin);
+      });
+    }
+
     function copiarDatos() {
       const datos = document.getElementById("datosBancarios").innerText;
       navigator.clipboard.writeText(datos).then(() => {

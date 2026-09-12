@@ -11,6 +11,9 @@
   <script src="supabase-config.js"></script>
 </head>
 <body>
+  <audio id="weddingMusic" preload="auto" loop playsinline src="assets/cancion-boda.mp3"></audio>
+  <button id="musicToggle" class="music-toggle" type="button" aria-label="Activar o pausar música" title="Música">♪</button>
+
   <main class="page" aria-label="Invitación digital de boda Carolina y Esthefano">
     <section class="invite-shell">
 
@@ -33,15 +36,103 @@
       <div class="invite-part">
         <img class="invite-image" src="assets/parte-3.png" alt="Invitación de boda Carolina y Esthefano - Parte 3" />
 
-        <a class="hotspot confirmar" href="confirmar.html" aria-label="Confirmar asistencia"></a>
+        <a class="hotspot confirmar internal-page" href="confirmar.html" data-title="Confirmar asistencia" aria-label="Confirmar asistencia"></a>
 
-        <a class="hotspot ver-datos" href="datos.html" aria-label="Ver datos bancarios"></a>
+        <a class="hotspot ver-datos internal-page" href="datos.html" data-title="Ver datos bancarios" aria-label="Ver datos bancarios"></a>
       </div>
 
       <a class="admin-link" href="admin.html">Administrador</a>
     </section>
   </main>
+
+  <div id="pageOverlay" class="page-overlay" aria-hidden="true">
+    <div class="page-overlay-card" role="dialog" aria-modal="true" aria-label="Contenido de la invitación">
+      <button id="closeOverlay" class="overlay-close" type="button" aria-label="Cerrar">×</button>
+      <iframe id="pageFrame" class="page-frame" title="Contenido de la invitación"></iframe>
+    </div>
+  </div>
+
   <script>
+    const music = document.getElementById("weddingMusic");
+    const musicToggle = document.getElementById("musicToggle");
+    const overlay = document.getElementById("pageOverlay");
+    const frame = document.getElementById("pageFrame");
+    const closeOverlayButton = document.getElementById("closeOverlay");
+
+    function syncMusicButton() {
+      musicToggle.classList.toggle("is-playing", !music.paused);
+      musicToggle.textContent = music.paused ? "♪" : "Ⅱ";
+      musicToggle.setAttribute("aria-label", music.paused ? "Reproducir música" : "Pausar música");
+    }
+
+    async function tryStartMusic() {
+      try {
+        await music.play();
+      } catch (error) {
+        // Los navegadores pueden bloquear audio con sonido hasta la primera interacción.
+      }
+      syncMusicButton();
+    }
+
+    musicToggle.addEventListener("click", async function() {
+      if (music.paused) {
+        await tryStartMusic();
+      } else {
+        music.pause();
+        syncMusicButton();
+      }
+    });
+
+    document.addEventListener("pointerdown", function startOnFirstInteraction() {
+      if (music.paused) tryStartMusic();
+      document.removeEventListener("pointerdown", startOnFirstInteraction);
+    }, { once: true });
+
+    window.addEventListener("load", tryStartMusic);
+    music.addEventListener("play", syncMusicButton);
+    music.addEventListener("pause", syncMusicButton);
+
+    function openInternalPage(url) {
+      frame.src = url;
+      overlay.classList.add("open");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.classList.add("overlay-open");
+      history.pushState({ inviteOverlay: true }, "", "#" + url.replace(".html", ""));
+    }
+
+    function closeInternalPage(updateHistory = true) {
+      overlay.classList.remove("open");
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("overlay-open");
+      frame.src = "about:blank";
+      if (updateHistory && location.hash) history.pushState({}, "", location.pathname);
+    }
+
+    document.querySelectorAll(".internal-page").forEach(function(link) {
+      link.addEventListener("click", function(event) {
+        event.preventDefault();
+        openInternalPage(link.getAttribute("href"));
+      });
+    });
+
+    closeOverlayButton.addEventListener("click", function() {
+      closeInternalPage();
+    });
+
+    overlay.addEventListener("click", function(event) {
+      if (event.target === overlay) closeInternalPage();
+    });
+
+    window.addEventListener("message", function(event) {
+      if (event.origin === window.location.origin && event.data && event.data.type === "closeInviteOverlay") {
+        closeInternalPage();
+      }
+    });
+
+    window.addEventListener("popstate", function() {
+      if (overlay.classList.contains("open")) closeInternalPage(false);
+    });
+
     if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
       const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       client.from("invitacion_visitas").insert([{ pagina: "invitacion" }]);
