@@ -20,6 +20,9 @@
       <circle class="berry d5" cx="246" cy="151" r="5"/><circle class="berry d6" cx="259" cy="158" r="4"/><circle class="berry d7" cx="387" cy="268" r="5"/>
     </svg>`;
 
+  const floralLeft = floral.replace('class="intro-floral"', 'class="intro-floral intro-floral-left"');
+  const floralRight = floral.replace('class="intro-floral"', 'class="intro-floral intro-floral-right"');
+
   const petalData = [
     ['13%','16%','10px','18deg','22px','5.8s','.5s'],['25%','7%','8px','-26deg','-19px','6.4s','1.4s'],
     ['38%','13%','7px','42deg','16px','5.5s','2.2s'],['70%','9%','9px','12deg','-25px','6.1s','.9s'],
@@ -34,8 +37,7 @@
 
   stage.innerHTML = `
     <div class="intro-vignette"></div><div class="intro-frame"></div>
-    <div class="intro-floral-wrap intro-floral-left">${floral}</div>
-    <div class="intro-floral-wrap intro-floral-right">${floral}</div>
+    ${floralLeft}${floralRight}
     <div class="intro-particles">${petals}${sparks}</div>
     <div class="intro-heartbeat"></div><div class="intro-heartbeat intro-heartbeat-2"></div>
     <div class="intro-center">
