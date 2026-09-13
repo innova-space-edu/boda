@@ -1,41 +1,7 @@
 -- Supabase schema for Carolina & Esthefano wedding invitation
 -- Current frontend tables: invitados, invitacion_visitas
--- Admin authorization is enforced in PostgreSQL/RLS, not only in the browser.
-
-create table if not exists public.wedding_admins (
-  email text primary key,
-  active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint wedding_admins_email_lowercase check (email = lower(email))
-);
-
-insert into public.wedding_admins (email, active)
-values ('sthefanomc@gmail.com', true)
-on conflict (email) do update
-set active = excluded.active,
-    updated_at = now();
-
-alter table public.wedding_admins enable row level security;
-revoke all on table public.wedding_admins from anon, authenticated;
-
-create or replace function public.is_wedding_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.wedding_admins wa
-    where wa.active = true
-      and wa.email = lower(coalesce(auth.jwt() ->> 'email', ''))
-  );
-$$;
-
-revoke all on function public.is_wedding_admin() from public;
-grant execute on function public.is_wedding_admin() to authenticated;
+-- Public visitors may INSERT confirmations/visits, but only the authorized
+-- authenticated administrator may read, update or delete wedding records.
 
 create table if not exists public.invitados (
   id uuid primary key default gen_random_uuid(),
@@ -72,22 +38,30 @@ create policy invitados_admin_select
 on public.invitados
 for select
 to authenticated
-using ((select public.is_wedding_admin()));
+using (
+  lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'sthefanomc@gmail.com'
+);
 
 drop policy if exists invitados_admin_update on public.invitados;
 create policy invitados_admin_update
 on public.invitados
 for update
 to authenticated
-using ((select public.is_wedding_admin()))
-with check ((select public.is_wedding_admin()));
+using (
+  lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'sthefanomc@gmail.com'
+)
+with check (
+  lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'sthefanomc@gmail.com'
+);
 
 drop policy if exists invitados_admin_delete on public.invitados;
 create policy invitados_admin_delete
 on public.invitados
 for delete
 to authenticated
-using ((select public.is_wedding_admin()));
+using (
+  lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'sthefanomc@gmail.com'
+);
 
 create table if not exists public.invitacion_visitas (
   id uuid primary key default gen_random_uuid(),
@@ -115,11 +89,15 @@ create policy invitacion_visitas_admin_select
 on public.invitacion_visitas
 for select
 to authenticated
-using ((select public.is_wedding_admin()));
+using (
+  lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'sthefanomc@gmail.com'
+);
 
 drop policy if exists invitacion_visitas_admin_delete on public.invitacion_visitas;
 create policy invitacion_visitas_admin_delete
 on public.invitacion_visitas
 for delete
 to authenticated
-using ((select public.is_wedding_admin()));
+using (
+  lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'sthefanomc@gmail.com'
+);
