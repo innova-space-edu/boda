@@ -12,31 +12,41 @@
   <main class="detail-page">
     <section class="detail-card">
       <h1 class="script-title">Confirmar asistencia</h1>
-      <p class="sub" id="rsvpSubtitle">Completa los datos de la familia y agrega a cada integrante con su contacto.</p>
+      <p class="sub" id="rsvpSubtitle">Completa los datos de tu grupo.</p>
 
       <form id="rsvpForm">
-        <div id="personalizedFields" class="hidden">
-          <div id="personalizedInviteTitle" class="personalized-rsvp-title"></div>
-          <p class="small-muted">Marca únicamente quiénes asistirán. Los nombres corresponden a las personas incluidas en este link de invitación y no se pueden modificar ni agregar otras personas.</p>
-          <div id="personalizedMembers" class="members-box"></div>
+        <div id="closedInviteFields" class="hidden">
+          <div id="closedInviteTitle" class="personalized-rsvp-title"></div>
+          <p class="small-muted">Marca quiénes asistirán. Esta invitación solo permite registrar a las personas incluidas por los novios.</p>
+          <div id="closedMembers" class="members-box"></div>
         </div>
 
-        <div id="generalFields">
-          <label for="confirmante">Familia de quien confirma</label>
-          <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" required />
+        <div id="openFamilyFields" class="hidden">
+          <div id="openFamilyTitle" class="personalized-rsvp-title"></div>
+          <p class="small-muted">Esta invitación permite que la familia registre libremente quiénes asistirán.</p>
 
-          <label for="asistencia">¿Asistirán?</label>
-          <select id="asistencia" name="asistencia" required>
-            <option value="">Selecciona una opción</option>
-            <option value="Sí asistiré">Sí asistiré</option>
-            <option value="No podré asistir">No podré asistir</option>
+          <label for="openAttendance">¿Asistirán?</label>
+          <select id="openAttendance">
+            <option value="yes">Sí, asistiremos</option>
+            <option value="no">No podremos asistir</option>
           </select>
 
-          <label for="cantidad">Cantidad de asistentes</label>
-          <input id="cantidad" name="cantidad" type="number" min="1" max="20" value="1" required />
+          <div id="openMembersBox" class="members-box"></div>
+          <button class="mini-button" type="button" id="addOpenMemberBtn">Agregar otra persona</button>
+        </div>
 
-          <div id="integrantesBox" class="members-box"></div>
-          <button class="mini-button" type="button" id="addMemberBtn">Agregar otro integrante</button>
+        <div id="generalFields" class="hidden">
+          <label for="confirmante">Familia de quien confirma</label>
+          <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" />
+
+          <label for="generalAttendance">¿Asistirán?</label>
+          <select id="generalAttendance">
+            <option value="yes">Sí, asistiremos</option>
+            <option value="no">No podremos asistir</option>
+          </select>
+
+          <div id="generalMembersBox" class="members-box"></div>
+          <button class="mini-button" type="button" id="addGeneralMemberBtn">Agregar otra persona</button>
         </div>
 
         <label for="mensaje">Mensaje para los novios</label>
@@ -53,21 +63,21 @@
   <script>
     const form = document.getElementById("rsvpForm");
     const statusText = document.getElementById("status");
-    const cantidadInput = document.getElementById("cantidad");
-    const integrantesBox = document.getElementById("integrantesBox");
-    const addMemberBtn = document.getElementById("addMemberBtn");
-    const backToInvite = document.getElementById("backToInvite");
-    const generalFields = document.getElementById("generalFields");
-    const personalizedFields = document.getElementById("personalizedFields");
-    const personalizedMembers = document.getElementById("personalizedMembers");
-    const personalizedInviteTitle = document.getElementById("personalizedInviteTitle");
-    const rsvpSubtitle = document.getElementById("rsvpSubtitle");
     const submitRsvpBtn = document.getElementById("submitRsvpBtn");
     const inviteToken = new URLSearchParams(window.location.search).get("inv") || "";
     const supabaseClient = (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase)
       ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
       : null;
     let personalizedInvite = null;
+    let openMemberCount = 0;
+    let generalMemberCount = 0;
+
+    const closedInviteFields = document.getElementById("closedInviteFields");
+    const openFamilyFields = document.getElementById("openFamilyFields");
+    const generalFields = document.getElementById("generalFields");
+    const openMembersBox = document.getElementById("openMembersBox");
+    const generalMembersBox = document.getElementById("generalMembersBox");
+    const backToInvite = document.getElementById("backToInvite");
 
     if (window.parent !== window) {
       backToInvite.addEventListener("click", function(event) {
@@ -86,226 +96,167 @@
       return clean.slice(0, -1).join(", ") + " y " + clean[clean.length - 1];
     }
 
-    function currentMembers() {
-      const names = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value; });
-      const phones = Array.from(document.querySelectorAll('input[name="integrante_contacto"]')).map(function(input){ return input.value; });
-      return { names: names, phones: phones };
+    function addFreeMember(container, prefix, countRef) {
+      const index = countRef();
+      const item = document.createElement("div");
+      item.className = "member-entry free-member-entry";
+      item.dataset.memberIndex = index;
+
+      const nameLabel = document.createElement("label");
+      nameLabel.textContent = "Nombre y apellido";
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.className = prefix + "-member-name";
+      nameInput.placeholder = "Nombre y apellido";
+
+      const phoneLabel = document.createElement("label");
+      phoneLabel.textContent = "WhatsApp o teléfono (opcional)";
+      const phoneInput = document.createElement("input");
+      phoneInput.type = "tel";
+      phoneInput.className = prefix + "-member-contact";
+      phoneInput.placeholder = "Contacto";
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "mini-button";
+      remove.textContent = "Quitar persona";
+      remove.addEventListener("click", function(){
+        if (container.querySelectorAll(".free-member-entry").length > 1) item.remove();
+      });
+
+      item.appendChild(nameLabel); item.appendChild(nameInput);
+      item.appendChild(phoneLabel); item.appendChild(phoneInput); item.appendChild(remove);
+      container.appendChild(item);
     }
 
-    function renderIntegrantes() {
-      const previous = currentMembers();
-      const total = Math.max(1, Math.min(20, Number(cantidadInput.value || 1)));
-      cantidadInput.value = total;
-      integrantesBox.innerHTML = "";
+    function nextOpenIndex(){ openMemberCount += 1; return openMemberCount; }
+    function nextGeneralIndex(){ generalMemberCount += 1; return generalMemberCount; }
 
-      const title = document.createElement("p");
-      title.className = "members-title";
-      title.textContent = "Integrantes y contactos";
-      integrantesBox.appendChild(title);
-
-      for (let i = 1; i <= total; i++) {
-        const item = document.createElement("div");
-        item.className = "member-entry";
-
-        const nameLabel = document.createElement("label");
-        nameLabel.textContent = "Integrante " + i + " - nombre y apellido";
-        nameLabel.setAttribute("for", "integrante_nombre_" + i);
-
-        const nameInput = document.createElement("input");
-        nameInput.id = "integrante_nombre_" + i;
-        nameInput.name = "integrante_nombre";
-        nameInput.type = "text";
-        nameInput.placeholder = "Nombre y apellido";
-        nameInput.required = true;
-        nameInput.value = previous.names[i - 1] || "";
-
-        const phoneLabel = document.createElement("label");
-        phoneLabel.textContent = "Contacto del integrante " + i;
-        phoneLabel.setAttribute("for", "integrante_contacto_" + i);
-
-        const phoneInput = document.createElement("input");
-        phoneInput.id = "integrante_contacto_" + i;
-        phoneInput.name = "integrante_contacto";
-        phoneInput.type = "tel";
-        phoneInput.placeholder = "WhatsApp o teléfono";
-        phoneInput.value = previous.phones[i - 1] || "";
-
-        item.appendChild(nameLabel);
-        item.appendChild(nameInput);
-        item.appendChild(phoneLabel);
-        item.appendChild(phoneInput);
-        integrantesBox.appendChild(item);
-      }
-    }
-
-    function renderPersonalizedMembers(names) {
-      personalizedMembers.innerHTML = "";
+    function renderClosedMembers(names) {
+      const box = document.getElementById("closedMembers"); box.innerHTML = "";
       names.forEach(function(name, index){
-        const item = document.createElement("div");
-        item.className = "personalized-member-entry";
-
-        const attendanceRow = document.createElement("label");
-        attendanceRow.className = "attendance-check";
-        attendanceRow.setAttribute("for", "personal_asiste_" + index);
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.id = "personal_asiste_" + index;
-        checkbox.name = "personal_asiste";
-        checkbox.value = name;
-        checkbox.checked = true;
-
-        const nameSpan = document.createElement("span");
-        nameSpan.textContent = name;
-
-        attendanceRow.appendChild(checkbox);
-        attendanceRow.appendChild(nameSpan);
-        item.appendChild(attendanceRow);
-
-        const phoneLabel = document.createElement("label");
-        phoneLabel.textContent = "WhatsApp o teléfono (opcional)";
-        phoneLabel.setAttribute("for", "personal_contact_" + index);
-        item.appendChild(phoneLabel);
-
-        const phoneInput = document.createElement("input");
-        phoneInput.type = "tel";
-        phoneInput.id = "personal_contact_" + index;
-        phoneInput.className = "personal-contact";
-        phoneInput.dataset.name = name;
-        phoneInput.placeholder = "Contacto";
-        item.appendChild(phoneInput);
-
-        personalizedMembers.appendChild(item);
+        const item = document.createElement("div"); item.className = "personalized-member-entry";
+        const row = document.createElement("label"); row.className = "attendance-check";
+        const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.name = "closed_asiste"; checkbox.value = name; checkbox.checked = true;
+        const span = document.createElement("span"); span.textContent = name;
+        row.appendChild(checkbox); row.appendChild(span); item.appendChild(row);
+        const phoneLabel = document.createElement("label"); phoneLabel.textContent = "WhatsApp o teléfono (opcional)";
+        const phoneInput = document.createElement("input"); phoneInput.type = "tel"; phoneInput.className = "closed-contact"; phoneInput.dataset.name = name; phoneInput.placeholder = "Contacto";
+        item.appendChild(phoneLabel); item.appendChild(phoneInput); box.appendChild(item);
       });
     }
 
-    async function loadPersonalizedInvite() {
-      if (!inviteToken) return false;
+    function toggleOpenAttendance() {
+      const attending = document.getElementById("openAttendance").value === "yes";
+      openMembersBox.classList.toggle("hidden", !attending);
+      document.getElementById("addOpenMemberBtn").classList.toggle("hidden", !attending);
+    }
+
+    function toggleGeneralAttendance() {
+      const attending = document.getElementById("generalAttendance").value === "yes";
+      generalMembersBox.classList.toggle("hidden", !attending);
+      document.getElementById("addGeneralMemberBtn").classList.toggle("hidden", !attending);
+    }
+
+    document.getElementById("openAttendance").addEventListener("change", toggleOpenAttendance);
+    document.getElementById("generalAttendance").addEventListener("change", toggleGeneralAttendance);
+    document.getElementById("addOpenMemberBtn").addEventListener("click", () => addFreeMember(openMembersBox, "open", nextOpenIndex));
+    document.getElementById("addGeneralMemberBtn").addEventListener("click", () => addFreeMember(generalMembersBox, "general", nextGeneralIndex));
+
+    function collectFreeMembers(prefix) {
+      const names = [];
+      const contacts = {};
+      document.querySelectorAll("." + prefix + "-member-name").forEach(function(input, index){
+        const name = input.value.trim();
+        if (!name) return;
+        names.push(name);
+        const phone = document.querySelectorAll("." + prefix + "-member-contact")[index]?.value.trim() || "";
+        contacts[name] = phone;
+      });
+      return { names, contacts };
+    }
+
+    async function loadInvite() {
       if (!supabaseClient) {
         statusText.textContent = "Falta configurar Supabase.";
         submitRsvpBtn.disabled = true;
-        return true;
+        return;
       }
 
-      generalFields.classList.add("hidden");
-      Array.from(generalFields.querySelectorAll("input,select,button")).forEach(function(el){ el.disabled = true; });
-      personalizedFields.classList.remove("hidden");
-      rsvpSubtitle.textContent = "Confirma la asistencia de las personas incluidas en esta invitación.";
-      submitRsvpBtn.disabled = true;
-      statusText.textContent = "Cargando invitación...";
+      if (!inviteToken) {
+        generalFields.classList.remove("hidden");
+        addFreeMember(generalMembersBox, "general", nextGeneralIndex);
+        toggleGeneralAttendance();
+        return;
+      }
 
+      statusText.textContent = "Cargando invitación...";
+      submitRsvpBtn.disabled = true;
       const result = await supabaseClient.rpc("obtener_invitacion_personalizada", { p_token: inviteToken });
       const invitation = result.data && result.data[0];
-
       if (result.error || !invitation) {
         console.error(result.error);
-        personalizedInviteTitle.textContent = "Invitación no disponible";
-        personalizedMembers.innerHTML = "<p class='status'>Este link no es válido o fue desactivado.</p>";
-        statusText.textContent = "";
-        return true;
+        statusText.textContent = "Este link no es válido o fue desactivado.";
+        return;
       }
 
       personalizedInvite = invitation;
-      personalizedInviteTitle.textContent = "Para " + formatInviteNames(invitation.invitados || []);
-      renderPersonalizedMembers(invitation.invitados || []);
-      submitRsvpBtn.disabled = false;
+      if (invitation.tipo === "familia_libre") {
+        openFamilyFields.classList.remove("hidden");
+        document.getElementById("openFamilyTitle").textContent = invitation.titulo_portada || ("Invitación para la " + invitation.familia);
+        document.getElementById("rsvpSubtitle").textContent = "Registra las personas de tu familia que asistirán.";
+        addFreeMember(openMembersBox, "open", nextOpenIndex);
+        toggleOpenAttendance();
+      } else {
+        closedInviteFields.classList.remove("hidden");
+        document.getElementById("closedInviteTitle").textContent = invitation.titulo_portada || ("Para " + formatInviteNames(invitation.invitados || []));
+        document.getElementById("rsvpSubtitle").textContent = "Confirma la asistencia de las personas incluidas en esta invitación.";
+        renderClosedMembers(invitation.invitados || []);
+      }
       statusText.textContent = "";
-      return true;
+      submitRsvpBtn.disabled = false;
     }
 
-    cantidadInput.addEventListener("input", renderIntegrantes);
-    addMemberBtn.addEventListener("click", function(){
-      const total = Math.max(1, Math.min(20, Number(cantidadInput.value || 1) + 1));
-      cantidadInput.value = total;
-      renderIntegrantes();
-    });
-    renderIntegrantes();
-    loadPersonalizedInvite();
-
-    form.addEventListener("submit", async function(event) {
+    form.addEventListener("submit", async function(event){
       event.preventDefault();
-      statusText.textContent = "Enviando confirmación...";
+      if (!supabaseClient) return;
       submitRsvpBtn.disabled = true;
+      statusText.textContent = "Enviando confirmación...";
+      const message = document.getElementById("mensaje").value.trim();
 
-      if (!supabaseClient) {
-        statusText.textContent = "Falta configurar Supabase.";
-        submitRsvpBtn.disabled = false;
-        return;
-      }
-
-      if (inviteToken) {
-        if (!personalizedInvite) {
-          statusText.textContent = "Este link de invitación no está disponible.";
-          return;
-        }
-
-        const asistentes = Array.from(document.querySelectorAll('input[name="personal_asiste"]:checked')).map(function(input){ return input.value; });
+      if (inviteToken && personalizedInvite?.tipo === "lista_cerrada") {
+        const asistentes = Array.from(document.querySelectorAll('input[name="closed_asiste"]:checked')).map(i => i.value);
         const contactos = {};
-        document.querySelectorAll(".personal-contact").forEach(function(input){
-          contactos[input.dataset.name] = input.value.trim();
-        });
-
-        const result = await supabaseClient.rpc("confirmar_invitacion_personalizada", {
-          p_token: inviteToken,
-          p_asistentes: asistentes,
-          p_contactos: contactos,
-          p_mensaje: form.mensaje.value.trim()
-        });
-
-        if (result.error) {
-          console.error(result.error);
-          statusText.textContent = "No se pudo guardar la confirmación. Intenta nuevamente.";
-          submitRsvpBtn.disabled = false;
-          return;
-        }
-
-        const total = Number(result.data || 0);
-        statusText.textContent = total > 0
-          ? "Confirmación enviada. Se registraron " + total + " asistente(s). Muchas gracias."
-          : "Confirmación enviada. Hemos registrado que no podrán asistir. Muchas gracias.";
-        submitRsvpBtn.disabled = false;
-        return;
+        document.querySelectorAll(".closed-contact").forEach(i => contactos[i.dataset.name] = i.value.trim());
+        const result = await supabaseClient.rpc("confirmar_invitacion_personalizada", { p_token:inviteToken, p_asistentes:asistentes, p_contactos:contactos, p_mensaje:message });
+        if (result.error) { console.error(result.error); statusText.textContent = "No se pudo guardar la confirmación."; submitRsvpBtn.disabled = false; return; }
+        statusText.textContent = asistentes.length ? "Confirmación enviada. Muchas gracias." : "Registramos que no podrán asistir. Muchas gracias.";
+        submitRsvpBtn.disabled = false; return;
       }
 
-      const confirmante = form.confirmante.value.trim();
-      const nombres = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value.trim(); });
-      const contactos = Array.from(document.querySelectorAll('input[name="integrante_contacto"]')).map(function(input){ return input.value.trim(); });
-      const grupoId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-
-      const rows = nombres.filter(Boolean).map(function(nombre, index){
-        return {
-          nombre: nombre,
-          asistencia: form.asistencia.value,
-          cantidad: 1,
-          confirmante: confirmante,
-          telefono: contactos[index] || "",
-          contacto_integrante: contactos[index] || "",
-          mensaje: form.mensaje.value.trim(),
-          grupo_id: grupoId
-        };
-      });
-
-      if (!rows.length) {
-        statusText.textContent = "Agrega al menos un integrante.";
-        submitRsvpBtn.disabled = false;
-        return;
+      if (inviteToken && personalizedInvite?.tipo === "familia_libre") {
+        const attending = document.getElementById("openAttendance").value === "yes";
+        const data = attending ? collectFreeMembers("open") : {names:[],contacts:{}};
+        if (attending && !data.names.length) { statusText.textContent = "Agrega al menos una persona que asistirá."; submitRsvpBtn.disabled = false; return; }
+        const result = await supabaseClient.rpc("confirmar_invitacion_familia_libre", { p_token:inviteToken, p_nombres:data.names, p_contactos:data.contacts, p_mensaje:message });
+        if (result.error) { console.error(result.error); statusText.textContent = "No se pudo guardar la confirmación."; submitRsvpBtn.disabled = false; return; }
+        statusText.textContent = attending ? "Confirmación enviada. Muchas gracias." : "Registramos que la familia no podrá asistir. Muchas gracias.";
+        submitRsvpBtn.disabled = false; return;
       }
 
+      const family = document.getElementById("confirmante").value.trim();
+      const attending = document.getElementById("generalAttendance").value === "yes";
+      const data = attending ? collectFreeMembers("general") : {names:[family],contacts:{}};
+      if (!family) { statusText.textContent = "Indica el nombre de la familia."; submitRsvpBtn.disabled = false; return; }
+      if (attending && !data.names.length) { statusText.textContent = "Agrega al menos una persona."; submitRsvpBtn.disabled = false; return; }
+      const groupId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      const rows = data.names.map(name => ({ nombre:name, asistencia:attending?"Sí asistiré":"No podré asistir", cantidad:1, confirmante:family, telefono:data.contacts[name]||"", contacto_integrante:data.contacts[name]||"", mensaje:message, grupo_id:groupId }));
       const result = await supabaseClient.from("invitados").insert(rows);
-
-      if (result.error) {
-        console.error(result.error);
-        statusText.textContent = "No se pudo enviar. Revisa las políticas de Supabase.";
-        submitRsvpBtn.disabled = false;
-        return;
-      }
-
-      form.reset();
-      cantidadInput.value = 1;
-      renderIntegrantes();
-      statusText.textContent = "Confirmación enviada. Muchas gracias.";
-      submitRsvpBtn.disabled = false;
+      if (result.error) { console.error(result.error); statusText.textContent = "No se pudo enviar la confirmación."; submitRsvpBtn.disabled = false; return; }
+      statusText.textContent = "Confirmación enviada. Muchas gracias."; submitRsvpBtn.disabled = false;
     });
+
+    loadInvite();
   </script>
 </body>
 </html>
