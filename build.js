@@ -15,8 +15,17 @@ const supabaseAnonKey =
 
 const config = `window.SUPABASE_URL = ${JSON.stringify(supabaseUrl)};
 window.SUPABASE_ANON_KEY = ${JSON.stringify(supabaseAnonKey)};
+document.addEventListener("DOMContentLoaded", function () {
+  const script = document.createElement("script");
+  script.src = window.location.pathname.endsWith("/admin.html") ? "admin-extra.js" : "invitation-extra.js";
+  document.body.appendChild(script);
+});
 `;
 
 fs.writeFileSync(path.join(out, "supabase-config.js"), config);
+
+["admin-extra.js", "invitation-extra.js"].forEach((file) => {
+  fs.copyFileSync(path.join(process.cwd(), file), path.join(out, file));
+});
 
 console.log("Supabase config generada.");
