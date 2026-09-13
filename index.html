@@ -19,6 +19,7 @@
 
   <div id="welcomeScreen" class="welcome-screen" role="dialog" aria-modal="true" aria-label="Portada de la invitación">
     <div id="introStage" class="intro-stage" aria-hidden="true"></div>
+    <div id="personalInviteBadge" class="personal-invite-badge hidden"></div>
     <div class="welcome-card">
       <img class="welcome-image" src="assets/ChatGPT%20Image%2012%20sept%202026,%2004_23_48%20p.m..png" alt="Carolina y Esthefano - portada de la invitación" />
       <button id="openInvitation" class="welcome-hotspot" style="left:30.1%;top:78.9%;width:34.2%;height:5.1%;" type="button" aria-label="Abrir invitación y comenzar la música">
@@ -65,6 +66,40 @@
     const overlay = document.getElementById("pageOverlay");
     const frame = document.getElementById("pageFrame");
     const closeOverlayButton = document.getElementById("closeOverlay");
+    const personalInviteBadge = document.getElementById("personalInviteBadge");
+    const inviteTokenFromUrl = new URLSearchParams(window.location.search).get("inv");
+    let activeInviteToken = inviteTokenFromUrl || sessionStorage.getItem("weddingInviteToken") || "";
+    let client = null;
+
+    function formatInviteNames(names) {
+      const clean = (names || []).filter(Boolean);
+      if (!clean.length) return "";
+      if (clean.length === 1) return clean[0];
+      if (clean.length === 2) return clean[0] + " y " + clean[1];
+      return clean.slice(0, -1).join(", ") + " y " + clean[clean.length - 1];
+    }
+
+    async function loadPersonalizedInvitation() {
+      if (!client || !activeInviteToken) return;
+
+      const result = await client.rpc("obtener_invitacion_personalizada", { p_token: activeInviteToken });
+      const invitation = result.data && result.data[0];
+
+      if (result.error || !invitation) {
+        sessionStorage.removeItem("weddingInviteToken");
+        activeInviteToken = "";
+        personalInviteBadge.classList.add("hidden");
+        return;
+      }
+
+      sessionStorage.setItem("weddingInviteToken", activeInviteToken);
+      personalInviteBadge.textContent = "Para " + formatInviteNames(invitation.invitados || []);
+      personalInviteBadge.classList.remove("hidden");
+
+      if (inviteTokenFromUrl) {
+        await client.rpc("registrar_apertura_invitacion", { p_token: activeInviteToken });
+      }
+    }
 
     function syncMusicButton() {
       musicToggle.classList.toggle("is-playing", !music.paused);
@@ -113,11 +148,15 @@
     syncMusicButton();
 
     function openInternalPage(url) {
-      frame.src = url;
+      const target = new URL(url, window.location.href);
+      if (activeInviteToken && target.pathname.endsWith("confirmar.html")) {
+        target.searchParams.set("inv", activeInviteToken);
+      }
+      frame.src = target.pathname.split("/").pop() + target.search;
       overlay.classList.add("open");
       overlay.setAttribute("aria-hidden", "false");
       document.body.classList.add("overlay-open");
-      history.pushState({ inviteOverlay: true }, "", "#" + url.replace(".html", ""));
+      history.pushState({ inviteOverlay: true }, "", "#" + target.pathname.split("/").pop().replace(".html", ""));
     }
 
     function closeInternalPage(updateHistory = true) {
@@ -125,7 +164,7 @@
       overlay.setAttribute("aria-hidden", "true");
       document.body.classList.remove("overlay-open");
       frame.src = "about:blank";
-      if (updateHistory && location.hash) history.pushState({}, "", location.pathname);
+      if (updateHistory && location.hash) history.pushState({}, "", location.pathname + location.search);
     }
 
     document.querySelectorAll(".internal-page").forEach(function(link) {
@@ -154,8 +193,9 @@
     });
 
     if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
-      const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       client.from("invitacion_visitas").insert([{ pagina: "invitacion" }]);
+      loadPersonalizedInvitation();
     }
   </script>
 </body>
