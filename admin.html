@@ -12,7 +12,7 @@
   <main class="admin-page">
     <section class="admin-card">
       <h1 class="script-title">Administrador</h1>
-      <p class="sub">Panel ordenado por familias, asistentes y estado de confirmación.</p>
+      <p class="sub">Panel de invitaciones, familias, asistentes y confirmaciones.</p>
 
       <div id="loginBox">
         <label for="adminEmail">Correo administrador</label>
@@ -36,6 +36,26 @@
         <div class="admin-actions">
           <button class="green-button" type="button" id="refreshBtn">Actualizar</button>
           <button class="green-button" type="button" id="logoutBtn">Cerrar sesión</button>
+        </div>
+
+        <div class="admin-section invite-link-section">
+          <h2>Links personalizados de invitación</h2>
+          <p class="small-muted">Escribe un invitado por línea. El link quedará asociado solamente a esas personas y, al confirmar asistencia, no podrán agregar nombres distintos.</p>
+
+          <label for="inviteNames">Personas invitadas</label>
+          <textarea id="inviteNames" class="invite-names-input" placeholder="Iván Morales Sandoval&#10;Nancy Campaña Hidalgo"></textarea>
+          <button class="green-button" type="button" id="createInviteBtn">Crear link de invitación</button>
+          <p class="status" id="inviteCreateStatus"></p>
+
+          <div id="generatedInviteBox" class="generated-invite-box hidden">
+            <strong id="generatedInviteTitle"></strong>
+            <div class="generated-link-row">
+              <input id="generatedInviteUrl" type="text" readonly />
+              <button class="mini-button compact-button" type="button" id="copyGeneratedBtn">Copiar link</button>
+            </div>
+          </div>
+
+          <div id="personalInvitesList" class="personal-invites-list"></div>
         </div>
 
         <div class="admin-section">
@@ -74,7 +94,44 @@
     const loginStatus = document.getElementById("loginStatus");
     const emailInput = document.getElementById("adminEmail");
     const passwordInput = document.getElementById("adminPassword");
+    const inviteNamesInput = document.getElementById("inviteNames");
+    const inviteCreateStatus = document.getElementById("inviteCreateStatus");
+    const generatedInviteBox = document.getElementById("generatedInviteBox");
+    const generatedInviteTitle = document.getElementById("generatedInviteTitle");
+    const generatedInviteUrl = document.getElementById("generatedInviteUrl");
     const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    function formatInviteNames(names) {
+      const clean = (names || []).filter(Boolean);
+      if (!clean.length) return "";
+      if (clean.length === 1) return clean[0];
+      if (clean.length === 2) return clean[0] + " y " + clean[1];
+      return clean.slice(0, -1).join(", ") + " y " + clean[clean.length - 1];
+    }
+
+    function invitationUrl(token) {
+      const url = new URL("index.html", window.location.href);
+      url.search = "";
+      url.hash = "";
+      url.searchParams.set("inv", token);
+      return url.toString();
+    }
+
+    async function copyText(text, button) {
+      try {
+        await navigator.clipboard.writeText(text);
+        if (button) {
+          const previous = button.textContent;
+          button.textContent = "Copiado";
+          setTimeout(function(){ button.textContent = previous; }, 1400);
+        }
+      } catch (error) {
+        generatedInviteUrl.value = text;
+        generatedInviteUrl.focus();
+        generatedInviteUrl.select();
+        document.execCommand("copy");
+      }
+    }
 
     function showPanel() {
       loginBox.classList.add("hidden");
@@ -198,6 +255,76 @@
       });
     }
 
+    function renderPersonalInvites(rows) {
+      const container = document.getElementById("personalInvitesList");
+      container.innerHTML = "";
+
+      if (!rows.length) {
+        container.innerHTML = "<p class='status'>Aún no has creado links personalizados.</p>";
+        return;
+      }
+
+      rows.forEach(function(invite){
+        const card = document.createElement("article");
+        card.className = "personal-invite-card" + (invite.activa ? "" : " is-inactive");
+
+        const title = document.createElement("h3");
+        title.textContent = "Para " + formatInviteNames(invite.invitados || []);
+        card.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "personal-invite-meta";
+        const responseText = invite.respondida_at ? "Respondida" : "Sin respuesta";
+        const openText = (invite.aperturas || 0) + " apertura(s)";
+        meta.textContent = responseText + " · " + openText + (invite.activa ? " · Activa" : " · Desactivada");
+        card.appendChild(meta);
+
+        const link = document.createElement("input");
+        link.type = "text";
+        link.readOnly = true;
+        link.value = invitationUrl(invite.token);
+        card.appendChild(link);
+
+        const actions = document.createElement("div");
+        actions.className = "invite-card-actions";
+
+        const copyButton = document.createElement("button");
+        copyButton.type = "button";
+        copyButton.className = "mini-button compact-button";
+        copyButton.textContent = "Copiar link";
+        copyButton.addEventListener("click", function(){ copyText(link.value, copyButton); });
+        actions.appendChild(copyButton);
+
+        const toggleButton = document.createElement("button");
+        toggleButton.type = "button";
+        toggleButton.className = "mini-button compact-button";
+        toggleButton.textContent = invite.activa ? "Desactivar" : "Reactivar";
+        toggleButton.addEventListener("click", async function(){
+          toggleButton.disabled = true;
+          const result = await client.from("invitaciones_personalizadas").update({ activa: !invite.activa, updated_at: new Date().toISOString() }).eq("id", invite.id);
+          if (result.error) {
+            inviteCreateStatus.textContent = "No se pudo cambiar el estado del link.";
+          } else {
+            await loadPersonalInvites();
+          }
+          toggleButton.disabled = false;
+        });
+        actions.appendChild(toggleButton);
+
+        card.appendChild(actions);
+        container.appendChild(card);
+      });
+    }
+
+    async function loadPersonalInvites() {
+      const result = await client.from("invitaciones_personalizadas").select("*").order("created_at", { ascending: false });
+      if (result.error) {
+        document.getElementById("personalInvitesList").innerHTML = "<p class='status'>No se pudieron cargar los links personalizados.</p>";
+        return;
+      }
+      renderPersonalInvites(result.data || []);
+    }
+
     async function loadAdminData() {
       const visitas = await client.from("invitacion_visitas").select("id", { count: "exact", head: true });
       const invitados = await client.from("invitados").select("*").order("created_at", { ascending: false });
@@ -215,11 +342,12 @@
       if (!rows.length) {
         document.getElementById("familyList").innerHTML = "<p class='status'>Aún no hay confirmaciones.</p>";
         document.getElementById("guestTable").innerHTML = "";
-        return;
+      } else {
+        renderFamilies(rows);
+        renderTable(rows);
       }
 
-      renderFamilies(rows);
-      renderTable(rows);
+      await loadPersonalInvites();
     }
 
     async function checkSession() {
@@ -229,6 +357,37 @@
         showPanel();
       }
     }
+
+    document.getElementById("createInviteBtn").addEventListener("click", async function(){
+      const names = Array.from(new Set(inviteNamesInput.value.split(/\n+/).map(function(name){ return name.trim(); }).filter(Boolean)));
+
+      if (!names.length) {
+        inviteCreateStatus.textContent = "Escribe al menos una persona invitada.";
+        return;
+      }
+
+      inviteCreateStatus.textContent = "Creando link...";
+      const result = await client.from("invitaciones_personalizadas").insert([{ invitados: names }]).select("*").single();
+
+      if (result.error || !result.data) {
+        console.error(result.error);
+        inviteCreateStatus.textContent = "No se pudo crear el link.";
+        return;
+      }
+
+      const invite = result.data;
+      const url = invitationUrl(invite.token);
+      generatedInviteTitle.textContent = "Para " + formatInviteNames(names);
+      generatedInviteUrl.value = url;
+      generatedInviteBox.classList.remove("hidden");
+      inviteNamesInput.value = "";
+      inviteCreateStatus.textContent = "Link creado correctamente.";
+      await loadPersonalInvites();
+    });
+
+    document.getElementById("copyGeneratedBtn").addEventListener("click", function(){
+      copyText(generatedInviteUrl.value, this);
+    });
 
     document.getElementById("loginBtn").addEventListener("click", async function(){
       const email = emailInput.value.trim().toLowerCase();
