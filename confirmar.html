@@ -12,29 +12,37 @@
   <main class="detail-page">
     <section class="detail-card">
       <h1 class="script-title">Confirmar asistencia</h1>
-      <p class="sub">Completa los datos de la familia y agrega a cada integrante con su contacto.</p>
+      <p class="sub" id="rsvpSubtitle">Completa los datos de la familia y agrega a cada integrante con su contacto.</p>
 
       <form id="rsvpForm">
-        <label for="confirmante">Familia de quien confirma</label>
-        <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" required />
+        <div id="personalizedFields" class="hidden">
+          <div id="personalizedInviteTitle" class="personalized-rsvp-title"></div>
+          <p class="small-muted">Marca únicamente quiénes asistirán. Los nombres corresponden a las personas incluidas en este link de invitación y no se pueden modificar ni agregar otras personas.</p>
+          <div id="personalizedMembers" class="members-box"></div>
+        </div>
 
-        <label for="asistencia">¿Asistirán?</label>
-        <select id="asistencia" name="asistencia" required>
-          <option value="">Selecciona una opción</option>
-          <option value="Sí asistiré">Sí asistiré</option>
-          <option value="No podré asistir">No podré asistir</option>
-        </select>
+        <div id="generalFields">
+          <label for="confirmante">Familia de quien confirma</label>
+          <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" required />
 
-        <label for="cantidad">Cantidad de asistentes</label>
-        <input id="cantidad" name="cantidad" type="number" min="1" max="20" value="1" required />
+          <label for="asistencia">¿Asistirán?</label>
+          <select id="asistencia" name="asistencia" required>
+            <option value="">Selecciona una opción</option>
+            <option value="Sí asistiré">Sí asistiré</option>
+            <option value="No podré asistir">No podré asistir</option>
+          </select>
 
-        <div id="integrantesBox" class="members-box"></div>
-        <button class="mini-button" type="button" id="addMemberBtn">Agregar otro integrante</button>
+          <label for="cantidad">Cantidad de asistentes</label>
+          <input id="cantidad" name="cantidad" type="number" min="1" max="20" value="1" required />
+
+          <div id="integrantesBox" class="members-box"></div>
+          <button class="mini-button" type="button" id="addMemberBtn">Agregar otro integrante</button>
+        </div>
 
         <label for="mensaje">Mensaje para los novios</label>
         <textarea id="mensaje" name="mensaje"></textarea>
 
-        <button class="green-button" type="submit">Enviar confirmación</button>
+        <button class="green-button" type="submit" id="submitRsvpBtn">Enviar confirmación</button>
         <p class="status" id="status"></p>
       </form>
 
@@ -49,12 +57,33 @@
     const integrantesBox = document.getElementById("integrantesBox");
     const addMemberBtn = document.getElementById("addMemberBtn");
     const backToInvite = document.getElementById("backToInvite");
+    const generalFields = document.getElementById("generalFields");
+    const personalizedFields = document.getElementById("personalizedFields");
+    const personalizedMembers = document.getElementById("personalizedMembers");
+    const personalizedInviteTitle = document.getElementById("personalizedInviteTitle");
+    const rsvpSubtitle = document.getElementById("rsvpSubtitle");
+    const submitRsvpBtn = document.getElementById("submitRsvpBtn");
+    const inviteToken = new URLSearchParams(window.location.search).get("inv") || "";
+    const supabaseClient = (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase)
+      ? supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+      : null;
+    let personalizedInvite = null;
 
     if (window.parent !== window) {
       backToInvite.addEventListener("click", function(event) {
         event.preventDefault();
         window.parent.postMessage({ type: "closeInviteOverlay" }, window.location.origin);
       });
+    } else if (inviteToken) {
+      backToInvite.href = "index.html?inv=" + encodeURIComponent(inviteToken);
+    }
+
+    function formatInviteNames(names) {
+      const clean = (names || []).filter(Boolean);
+      if (!clean.length) return "";
+      if (clean.length === 1) return clean[0];
+      if (clean.length === 2) return clean[0] + " y " + clean[1];
+      return clean.slice(0, -1).join(", ") + " y " + clean[clean.length - 1];
     }
 
     function currentMembers() {
@@ -109,6 +138,81 @@
       }
     }
 
+    function renderPersonalizedMembers(names) {
+      personalizedMembers.innerHTML = "";
+      names.forEach(function(name, index){
+        const item = document.createElement("div");
+        item.className = "personalized-member-entry";
+
+        const attendanceRow = document.createElement("label");
+        attendanceRow.className = "attendance-check";
+        attendanceRow.setAttribute("for", "personal_asiste_" + index);
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = "personal_asiste_" + index;
+        checkbox.name = "personal_asiste";
+        checkbox.value = name;
+        checkbox.checked = true;
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = name;
+
+        attendanceRow.appendChild(checkbox);
+        attendanceRow.appendChild(nameSpan);
+        item.appendChild(attendanceRow);
+
+        const phoneLabel = document.createElement("label");
+        phoneLabel.textContent = "WhatsApp o teléfono (opcional)";
+        phoneLabel.setAttribute("for", "personal_contact_" + index);
+        item.appendChild(phoneLabel);
+
+        const phoneInput = document.createElement("input");
+        phoneInput.type = "tel";
+        phoneInput.id = "personal_contact_" + index;
+        phoneInput.className = "personal-contact";
+        phoneInput.dataset.name = name;
+        phoneInput.placeholder = "Contacto";
+        item.appendChild(phoneInput);
+
+        personalizedMembers.appendChild(item);
+      });
+    }
+
+    async function loadPersonalizedInvite() {
+      if (!inviteToken) return false;
+      if (!supabaseClient) {
+        statusText.textContent = "Falta configurar Supabase.";
+        submitRsvpBtn.disabled = true;
+        return true;
+      }
+
+      generalFields.classList.add("hidden");
+      Array.from(generalFields.querySelectorAll("input,select,button")).forEach(function(el){ el.disabled = true; });
+      personalizedFields.classList.remove("hidden");
+      rsvpSubtitle.textContent = "Confirma la asistencia de las personas incluidas en esta invitación.";
+      submitRsvpBtn.disabled = true;
+      statusText.textContent = "Cargando invitación...";
+
+      const result = await supabaseClient.rpc("obtener_invitacion_personalizada", { p_token: inviteToken });
+      const invitation = result.data && result.data[0];
+
+      if (result.error || !invitation) {
+        console.error(result.error);
+        personalizedInviteTitle.textContent = "Invitación no disponible";
+        personalizedMembers.innerHTML = "<p class='status'>Este link no es válido o fue desactivado.</p>";
+        statusText.textContent = "";
+        return true;
+      }
+
+      personalizedInvite = invitation;
+      personalizedInviteTitle.textContent = "Para " + formatInviteNames(invitation.invitados || []);
+      renderPersonalizedMembers(invitation.invitados || []);
+      submitRsvpBtn.disabled = false;
+      statusText.textContent = "";
+      return true;
+    }
+
     cantidadInput.addEventListener("input", renderIntegrantes);
     addMemberBtn.addEventListener("click", function(){
       const total = Math.max(1, Math.min(20, Number(cantidadInput.value || 1) + 1));
@@ -116,17 +220,53 @@
       renderIntegrantes();
     });
     renderIntegrantes();
+    loadPersonalizedInvite();
 
-    form.addEventListener("submit", async (event) => {
+    form.addEventListener("submit", async function(event) {
       event.preventDefault();
       statusText.textContent = "Enviando confirmación...";
+      submitRsvpBtn.disabled = true;
 
-      if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      if (!supabaseClient) {
         statusText.textContent = "Falta configurar Supabase.";
+        submitRsvpBtn.disabled = false;
         return;
       }
 
-      const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      if (inviteToken) {
+        if (!personalizedInvite) {
+          statusText.textContent = "Este link de invitación no está disponible.";
+          return;
+        }
+
+        const asistentes = Array.from(document.querySelectorAll('input[name="personal_asiste"]:checked')).map(function(input){ return input.value; });
+        const contactos = {};
+        document.querySelectorAll(".personal-contact").forEach(function(input){
+          contactos[input.dataset.name] = input.value.trim();
+        });
+
+        const result = await supabaseClient.rpc("confirmar_invitacion_personalizada", {
+          p_token: inviteToken,
+          p_asistentes: asistentes,
+          p_contactos: contactos,
+          p_mensaje: form.mensaje.value.trim()
+        });
+
+        if (result.error) {
+          console.error(result.error);
+          statusText.textContent = "No se pudo guardar la confirmación. Intenta nuevamente.";
+          submitRsvpBtn.disabled = false;
+          return;
+        }
+
+        const total = Number(result.data || 0);
+        statusText.textContent = total > 0
+          ? "Confirmación enviada. Se registraron " + total + " asistente(s). Muchas gracias."
+          : "Confirmación enviada. Hemos registrado que no podrán asistir. Muchas gracias.";
+        submitRsvpBtn.disabled = false;
+        return;
+      }
+
       const confirmante = form.confirmante.value.trim();
       const nombres = Array.from(document.querySelectorAll('input[name="integrante_nombre"]')).map(function(input){ return input.value.trim(); });
       const contactos = Array.from(document.querySelectorAll('input[name="integrante_contacto"]')).map(function(input){ return input.value.trim(); });
@@ -147,6 +287,7 @@
 
       if (!rows.length) {
         statusText.textContent = "Agrega al menos un integrante.";
+        submitRsvpBtn.disabled = false;
         return;
       }
 
@@ -155,6 +296,7 @@
       if (result.error) {
         console.error(result.error);
         statusText.textContent = "No se pudo enviar. Revisa las políticas de Supabase.";
+        submitRsvpBtn.disabled = false;
         return;
       }
 
@@ -162,6 +304,7 @@
       cantidadInput.value = 1;
       renderIntegrantes();
       statusText.textContent = "Confirmación enviada. Muchas gracias.";
+      submitRsvpBtn.disabled = false;
     });
   </script>
 </body>
