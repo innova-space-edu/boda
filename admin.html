@@ -40,10 +40,14 @@
 
         <div class="admin-section invite-link-section">
           <h2>Links personalizados de invitación</h2>
-          <p class="small-muted">Escribe un invitado por línea. El link quedará asociado solamente a esas personas y, al confirmar asistencia, no podrán agregar nombres distintos.</p>
+          <p class="small-muted">El texto corto aparecerá arriba de la portada. La lista completa se mostrará después, al confirmar asistencia, y quedará limitada únicamente a las personas que registres.</p>
+
+          <label for="inviteCoverTitle">Texto breve de portada</label>
+          <input id="inviteCoverTitle" type="text" placeholder="Invitación para la familia Morales Campaña" />
+          <p class="small-muted">Ejemplo: “Invitación para la familia Morales Campaña”. Así la portada se mantiene limpia aunque el grupo tenga muchas personas.</p>
 
           <label for="inviteNames">Personas invitadas</label>
-          <textarea id="inviteNames" class="invite-names-input" placeholder="Iván Morales Sandoval&#10;Nancy Campaña Hidalgo"></textarea>
+          <textarea id="inviteNames" class="invite-names-input" placeholder="Javier Morales Campaña&#10;Priscila Barraza Carvajal&#10;Hermana de Priscila&#10;Mamá de Priscila"></textarea>
           <button class="green-button" type="button" id="createInviteBtn">Crear link de invitación</button>
           <p class="status" id="inviteCreateStatus"></p>
 
@@ -94,6 +98,7 @@
     const loginStatus = document.getElementById("loginStatus");
     const emailInput = document.getElementById("adminEmail");
     const passwordInput = document.getElementById("adminPassword");
+    const inviteCoverTitleInput = document.getElementById("inviteCoverTitle");
     const inviteNamesInput = document.getElementById("inviteNames");
     const inviteCreateStatus = document.getElementById("inviteCreateStatus");
     const generatedInviteBox = document.getElementById("generatedInviteBox");
@@ -269,8 +274,13 @@
         card.className = "personal-invite-card" + (invite.activa ? "" : " is-inactive");
 
         const title = document.createElement("h3");
-        title.textContent = "Para " + formatInviteNames(invite.invitados || []);
+        title.textContent = invite.titulo_portada || ("Para " + formatInviteNames(invite.invitados || []));
         card.appendChild(title);
+
+        const names = document.createElement("p");
+        names.className = "small-muted";
+        names.textContent = "Invitados: " + formatInviteNames(invite.invitados || []);
+        card.appendChild(names);
 
         const meta = document.createElement("div");
         meta.className = "personal-invite-meta";
@@ -294,6 +304,31 @@
         copyButton.textContent = "Copiar link";
         copyButton.addEventListener("click", function(){ copyText(link.value, copyButton); });
         actions.appendChild(copyButton);
+
+        const editTitleButton = document.createElement("button");
+        editTitleButton.type = "button";
+        editTitleButton.className = "mini-button compact-button";
+        editTitleButton.textContent = "Editar portada";
+        editTitleButton.addEventListener("click", async function(){
+          const currentTitle = invite.titulo_portada || ("Para " + formatInviteNames(invite.invitados || []));
+          const newTitle = window.prompt("Texto breve que aparecerá arriba de la portada:", currentTitle);
+          if (newTitle === null) return;
+          const cleanTitle = newTitle.trim();
+          if (!cleanTitle) {
+            inviteCreateStatus.textContent = "El texto de portada no puede quedar vacío.";
+            return;
+          }
+          editTitleButton.disabled = true;
+          const result = await client.from("invitaciones_personalizadas").update({ titulo_portada: cleanTitle, updated_at: new Date().toISOString() }).eq("id", invite.id);
+          if (result.error) {
+            inviteCreateStatus.textContent = "No se pudo actualizar el texto de portada.";
+          } else {
+            inviteCreateStatus.textContent = "Texto de portada actualizado.";
+            await loadPersonalInvites();
+          }
+          editTitleButton.disabled = false;
+        });
+        actions.appendChild(editTitleButton);
 
         const toggleButton = document.createElement("button");
         toggleButton.type = "button";
@@ -359,7 +394,14 @@
     }
 
     document.getElementById("createInviteBtn").addEventListener("click", async function(){
+      const coverTitle = inviteCoverTitleInput.value.trim();
       const names = Array.from(new Set(inviteNamesInput.value.split(/\n+/).map(function(name){ return name.trim(); }).filter(Boolean)));
+
+      if (!coverTitle) {
+        inviteCreateStatus.textContent = "Escribe el texto breve que aparecerá en la portada.";
+        inviteCoverTitleInput.focus();
+        return;
+      }
 
       if (!names.length) {
         inviteCreateStatus.textContent = "Escribe al menos una persona invitada.";
@@ -367,7 +409,7 @@
       }
 
       inviteCreateStatus.textContent = "Creando link...";
-      const result = await client.from("invitaciones_personalizadas").insert([{ invitados: names }]).select("*").single();
+      const result = await client.from("invitaciones_personalizadas").insert([{ invitados: names, titulo_portada: coverTitle }]).select("*").single();
 
       if (result.error || !result.data) {
         console.error(result.error);
@@ -377,9 +419,10 @@
 
       const invite = result.data;
       const url = invitationUrl(invite.token);
-      generatedInviteTitle.textContent = "Para " + formatInviteNames(names);
+      generatedInviteTitle.textContent = coverTitle;
       generatedInviteUrl.value = url;
       generatedInviteBox.classList.remove("hidden");
+      inviteCoverTitleInput.value = "";
       inviteNamesInput.value = "";
       inviteCreateStatus.textContent = "Link creado correctamente.";
       await loadPersonalInvites();
