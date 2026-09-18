@@ -193,6 +193,283 @@
     };
   }
 
+
+  // Lista interna de invitados por novio/novia -----------------------------
+  let weddingListRows = [];
+
+  style.textContent += \`
+    .wedding-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+    .wedding-list-summary .metric-card strong{margin-bottom:3px}
+    .wedding-list-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .wedding-list-card{background:var(--admin-surface);border:1px solid var(--admin-line);border-radius:20px;padding:20px;box-shadow:var(--admin-shadow)}
+    .wedding-list-card h3{margin:0;color:var(--admin-gold-dark);font-size:20px}
+    .wedding-list-card .wedding-list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .wedding-side-count{display:inline-grid;place-items:center;min-width:42px;height:34px;padding:0 10px;border-radius:999px;background:var(--admin-surface-2);border:1px solid var(--admin-line);font-weight:800;color:var(--admin-gold-dark)}
+    .wedding-list-card textarea{min-height:105px}
+    .wedding-list-items{display:grid;gap:8px;margin-top:16px}
+    .wedding-person-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(143,105,40,.12);background:var(--admin-surface-2);border-radius:13px}
+    .wedding-person-row span{overflow-wrap:anywhere}
+    .wedding-person-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .wedding-person-actions button{margin:0;width:auto}
+    .wedding-list-empty{padding:20px 8px;color:var(--admin-muted);text-align:center}
+    @media(max-width:900px){.wedding-list-columns{grid-template-columns:1fr}}
+    @media(max-width:700px){.wedding-list-summary{grid-template-columns:1fr 1fr}.wedding-list-summary .wedding-total-card{grid-column:1/-1}}
+  \`;
+
+  function setupWeddingLists() {
+    const nav = document.querySelector('.sidebar-nav');
+    const main = document.querySelector('.dashboard-main');
+    if (!nav || !main || document.getElementById('weddingListsSection')) return;
+
+    const navButton = document.createElement('button');
+    navButton.className = 'nav-item';
+    navButton.type = 'button';
+    navButton.dataset.section = 'weddingListsSection';
+    navButton.textContent = 'Lista de novios';
+    nav.appendChild(navButton);
+
+    const section = document.createElement('section');
+    section.className = 'dashboard-section';
+    section.id = 'weddingListsSection';
+    section.innerHTML = \`
+      <div class="section-intro">
+        <div>
+          <h2>Lista de invitados por novios</h2>
+          <p>Control interno del administrador. Esta información no aparece en la invitación pública.</p>
+        </div>
+      </div>
+
+      <div class="wedding-list-summary">
+        <article class="metric-card">
+          <span>Novio</span>
+          <strong id="groomListTotal">0</strong>
+          <small>Personas en la lista del novio</small>
+        </article>
+        <article class="metric-card">
+          <span>Novia</span>
+          <strong id="brideListTotal">0</strong>
+          <small>Personas en la lista de la novia</small>
+        </article>
+        <article class="metric-card wedding-total-card">
+          <span>Total general</span>
+          <strong id="weddingListGrandTotal">0</strong>
+          <small>Total combinado de ambas listas</small>
+        </article>
+      </div>
+
+      <div class="wedding-list-columns">
+        <article class="wedding-list-card">
+          <div class="wedding-list-head">
+            <h3>Lista del novio</h3>
+            <span class="wedding-side-count" id="groomInlineCount">0</span>
+          </div>
+          <label for="groomNamesInput">Agregar invitados</label>
+          <textarea id="groomNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Juan Pérez&#10;María Soto"></textarea>
+          <p class="form-help">Puedes pegar varios nombres a la vez, uno por línea.</p>
+          <button class="green-button" type="button" id="addGroomNamesBtn">Agregar a lista del novio</button>
+          <p class="status" id="groomListStatus"></p>
+          <div class="wedding-list-items" id="groomListItems"></div>
+        </article>
+
+        <article class="wedding-list-card">
+          <div class="wedding-list-head">
+            <h3>Lista de la novia</h3>
+            <span class="wedding-side-count" id="brideInlineCount">0</span>
+          </div>
+          <label for="brideNamesInput">Agregar invitados</label>
+          <textarea id="brideNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Ana González&#10;Pedro Muñoz"></textarea>
+          <p class="form-help">Puedes pegar varios nombres a la vez, uno por línea.</p>
+          <button class="green-button" type="button" id="addBrideNamesBtn">Agregar a lista de la novia</button>
+          <p class="status" id="brideListStatus"></p>
+          <div class="wedding-list-items" id="brideListItems"></div>
+        </article>
+      </div>
+    \`;
+    main.appendChild(section);
+
+    navButton.addEventListener('click', function () {
+      setSection('weddingListsSection');
+      document.getElementById('sectionTitle').textContent = 'Lista de novios';
+      loadWeddingLists();
+    });
+
+    document.getElementById('addGroomNamesBtn').addEventListener('click', function () {
+      addWeddingNames('novio');
+    });
+    document.getElementById('addBrideNamesBtn').addEventListener('click', function () {
+      addWeddingNames('novia');
+    });
+  }
+
+  function sideElements(side) {
+    const groom = side === 'novio';
+    return {
+      input: document.getElementById(groom ? 'groomNamesInput' : 'brideNamesInput'),
+      status: document.getElementById(groom ? 'groomListStatus' : 'brideListStatus'),
+      list: document.getElementById(groom ? 'groomListItems' : 'brideListItems')
+    };
+  }
+
+  async function addWeddingNames(side) {
+    const els = sideElements(side);
+    if (!els.input || !els.status) return;
+
+    const typed = els.input.value
+      .split(/\n+/)
+      .map(name => name.trim())
+      .filter(Boolean);
+
+    const uniqueTyped = Array.from(new Map(typed.map(name => [name.toLocaleLowerCase('es-CL'), name])).values());
+    const existing = new Set(
+      weddingListRows
+        .filter(row => row.lado === side)
+        .map(row => String(row.nombre || '').trim().toLocaleLowerCase('es-CL'))
+    );
+    const names = uniqueTyped.filter(name => !existing.has(name.toLocaleLowerCase('es-CL')));
+
+    if (!names.length) {
+      els.status.textContent = typed.length ? 'Los nombres ingresados ya están en esta lista.' : 'Agrega al menos un nombre.';
+      return;
+    }
+
+    els.status.textContent = 'Guardando...';
+    const result = await client
+      .from('lista_novios')
+      .insert(names.map(nombre => ({ lado: side, nombre })));
+
+    if (result.error) {
+      console.error(result.error);
+      els.status.textContent = 'No se pudieron guardar los nombres.';
+      return;
+    }
+
+    els.input.value = '';
+    els.status.textContent = names.length === 1 ? 'Invitado agregado.' : names.length + ' invitados agregados.';
+    await loadWeddingLists();
+  }
+
+  async function editWeddingName(row) {
+    const value = prompt('Editar nombre:', row.nombre || '');
+    if (value === null) return;
+    const name = value.trim();
+    if (!name) return;
+
+    const result = await client
+      .from('lista_novios')
+      .update({ nombre: name, updated_at: new Date().toISOString() })
+      .eq('id', row.id);
+
+    if (result.error) {
+      console.error(result.error);
+      alert('No se pudo editar el nombre.');
+      return;
+    }
+    await loadWeddingLists();
+  }
+
+  async function deleteWeddingName(row) {
+    if (!confirm('¿Eliminar a "' + row.nombre + '" de la lista?')) return;
+    const result = await client.from('lista_novios').delete().eq('id', row.id);
+    if (result.error) {
+      console.error(result.error);
+      alert('No se pudo eliminar el nombre.');
+      return;
+    }
+    await loadWeddingLists();
+  }
+
+  function renderWeddingSide(side, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+
+    const rows = weddingListRows
+      .filter(row => row.lado === side)
+      .slice()
+      .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es-CL', { sensitivity: 'base' }));
+
+    if (!rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'wedding-list-empty';
+      empty.textContent = 'Aún no hay personas en esta lista.';
+      container.appendChild(empty);
+      return;
+    }
+
+    rows.forEach(row => {
+      const item = document.createElement('div');
+      item.className = 'wedding-person-row';
+
+      const name = document.createElement('span');
+      name.textContent = row.nombre || 'Sin nombre';
+
+      const actions = document.createElement('div');
+      actions.className = 'wedding-person-actions';
+
+      const edit = document.createElement('button');
+      edit.className = 'mini-button compact-button';
+      edit.type = 'button';
+      edit.textContent = 'Editar';
+      edit.addEventListener('click', () => editWeddingName(row));
+
+      const del = document.createElement('button');
+      del.className = 'mini-button compact-button';
+      del.type = 'button';
+      del.textContent = 'Eliminar';
+      del.addEventListener('click', () => deleteWeddingName(row));
+
+      actions.append(edit, del);
+      item.append(name, actions);
+      container.appendChild(item);
+    });
+  }
+
+  function renderWeddingLists() {
+    const groomCount = weddingListRows.filter(row => row.lado === 'novio').length;
+    const brideCount = weddingListRows.filter(row => row.lado === 'novia').length;
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    setText('groomListTotal', groomCount);
+    setText('brideListTotal', brideCount);
+    setText('weddingListGrandTotal', groomCount + brideCount);
+    setText('groomInlineCount', groomCount);
+    setText('brideInlineCount', brideCount);
+
+    renderWeddingSide('novio', 'groomListItems');
+    renderWeddingSide('novia', 'brideListItems');
+  }
+
+  async function loadWeddingLists() {
+    if (!document.getElementById('weddingListsSection')) return;
+    const result = await client
+      .from('lista_novios')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (result.error) {
+      console.error(result.error);
+      const groomStatus = document.getElementById('groomListStatus');
+      const brideStatus = document.getElementById('brideListStatus');
+      if (groomStatus) groomStatus.textContent = 'No se pudo cargar la lista.';
+      if (brideStatus) brideStatus.textContent = 'No se pudo cargar la lista.';
+      return;
+    }
+
+    weddingListRows = result.data || [];
+    renderWeddingLists();
+  }
+
+  setupWeddingLists();
+
+  const loadAdminDataBase = loadAdminData;
+  loadAdminData = async function () {
+    await loadAdminDataBase();
+    await loadWeddingLists();
+  };
+
   setupCreateMode();
   setupDashboardStat();
   setupFilter();
