@@ -197,7 +197,7 @@
   // Lista interna de invitados por novio/novia -----------------------------
   let weddingListRows = [];
 
-  style.textContent += \`
+  style.textContent += `
     .wedding-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
     .wedding-list-summary .metric-card strong{margin-bottom:3px}
     .wedding-list-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -214,7 +214,7 @@
     .wedding-list-empty{padding:20px 8px;color:var(--admin-muted);text-align:center}
     @media(max-width:900px){.wedding-list-columns{grid-template-columns:1fr}}
     @media(max-width:700px){.wedding-list-summary{grid-template-columns:1fr 1fr}.wedding-list-summary .wedding-total-card{grid-column:1/-1}}
-  \`;
+  `;
 
   function setupWeddingLists() {
     const nav = document.querySelector('.sidebar-nav');
@@ -231,7 +231,7 @@
     const section = document.createElement('section');
     section.className = 'dashboard-section';
     section.id = 'weddingListsSection';
-    section.innerHTML = \`
+    section.innerHTML = `
       <div class="section-intro">
         <div>
           <h2>Lista de invitados por novios</h2>
@@ -284,7 +284,7 @@
           <div class="wedding-list-items" id="brideListItems"></div>
         </article>
       </div>
-    \`;
+    `;
     main.appendChild(section);
 
     navButton.addEventListener('click', function () {
