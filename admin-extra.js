@@ -200,20 +200,34 @@
   style.textContent += `
     .wedding-list-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
     .wedding-list-summary .metric-card strong{margin-bottom:3px}
-    .wedding-list-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-    .wedding-list-card{background:var(--admin-surface);border:1px solid var(--admin-line);border-radius:20px;padding:20px;box-shadow:var(--admin-shadow)}
+    .wedding-list-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+    .wedding-list-card{min-width:0;background:var(--admin-surface);border:1px solid var(--admin-line);border-radius:20px;padding:20px;box-shadow:var(--admin-shadow)}
     .wedding-list-card h3{margin:0;color:var(--admin-gold-dark);font-size:20px}
     .wedding-list-card .wedding-list-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .wedding-list-subcount{margin:4px 0 0;color:var(--admin-muted);font-size:12px}
     .wedding-side-count{display:inline-grid;place-items:center;min-width:42px;height:34px;padding:0 10px;border-radius:999px;background:var(--admin-surface-2);border:1px solid var(--admin-line);font-weight:800;color:var(--admin-gold-dark)}
     .wedding-list-card textarea{min-height:105px}
-    .wedding-list-items{display:grid;gap:8px;margin-top:16px}
-    .wedding-person-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(143,105,40,.12);background:var(--admin-surface-2);border-radius:13px}
-    .wedding-person-row span{overflow-wrap:anywhere}
-    .wedding-person-actions{display:flex;gap:6px;flex-wrap:wrap}
-    .wedding-person-actions button{margin:0;width:auto}
+    .wedding-list-items{display:grid;gap:7px;margin-top:18px;min-width:0}
+    .wedding-list-table-head,.wedding-person-row{display:grid;grid-template-columns:32px minmax(0,1fr) 126px 132px;align-items:center;gap:10px}
+    .wedding-list-table-head{padding:0 11px 7px;color:var(--admin-muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em}
+    .wedding-person-row{min-width:0;padding:10px 11px;border:1px solid rgba(143,105,40,.12);background:var(--admin-surface-2);border-radius:13px}
+    .wedding-person-row.is-sent{background:#f2f5ed;border-color:rgba(111,122,88,.24)}
+    .wedding-person-number{color:var(--admin-muted);font-size:12px;text-align:center}
+    .wedding-person-name{display:block!important;min-width:0!important;width:auto!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important;word-break:normal!important;font-weight:650}
+    .wedding-sent-check{display:flex!important;align-items:center;gap:7px;margin:0!important;cursor:pointer;white-space:nowrap;color:var(--admin-muted);font-size:12px}
+    .dashboard-main .wedding-sent-check input[type="checkbox"]{appearance:auto!important;width:18px!important;min-width:18px!important;max-width:18px!important;height:18px!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;accent-color:var(--admin-olive)}
+    .wedding-person-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:nowrap;min-width:0}
+    .wedding-person-actions .mini-button{margin:0!important;width:auto!important;min-width:0!important;padding:7px 9px!important;font-size:12px!important;white-space:nowrap}
     .wedding-list-empty{padding:20px 8px;color:var(--admin-muted);text-align:center}
-    @media(max-width:900px){.wedding-list-columns{grid-template-columns:1fr}}
-    @media(max-width:700px){.wedding-list-summary{grid-template-columns:1fr 1fr}.wedding-list-summary .wedding-total-card{grid-column:1/-1}}
+    @media(max-width:1200px){.wedding-list-columns{grid-template-columns:1fr}}
+    @media(max-width:700px){
+      .wedding-list-summary{grid-template-columns:1fr 1fr}
+      .wedding-list-summary .wedding-total-card{grid-column:1/-1}
+      .wedding-list-table-head{display:none}
+      .wedding-person-row{grid-template-columns:28px minmax(0,1fr);gap:8px 10px}
+      .wedding-sent-check{grid-column:2}
+      .wedding-person-actions{grid-column:2;justify-content:flex-start}
+    }
   `;
 
   function setupWeddingLists() {
@@ -260,7 +274,10 @@
       <div class="wedding-list-columns">
         <article class="wedding-list-card">
           <div class="wedding-list-head">
-            <h3>Lista del novio</h3>
+            <div>
+              <h3>Lista del novio</h3>
+              <p class="wedding-list-subcount"><span id="groomSentCount">0</span> invitaciones enviadas</p>
+            </div>
             <span class="wedding-side-count" id="groomInlineCount">0</span>
           </div>
           <label for="groomNamesInput">Agregar invitados</label>
@@ -273,7 +290,10 @@
 
         <article class="wedding-list-card">
           <div class="wedding-list-head">
-            <h3>Lista de la novia</h3>
+            <div>
+              <h3>Lista de la novia</h3>
+              <p class="wedding-list-subcount"><span id="brideSentCount">0</span> invitaciones enviadas</p>
+            </div>
             <span class="wedding-side-count" id="brideInlineCount">0</span>
           </div>
           <label for="brideNamesInput">Agregar invitados</label>
@@ -378,6 +398,25 @@
     await loadWeddingLists();
   }
 
+  async function toggleWeddingInvitation(row, checked, checkbox) {
+    checkbox.disabled = true;
+    const result = await client
+      .from('lista_novios')
+      .update({ invitacion_enviada: checked, updated_at: new Date().toISOString() })
+      .eq('id', row.id);
+
+    if (result.error) {
+      console.error(result.error);
+      checkbox.checked = !checked;
+      alert('No se pudo actualizar el estado de la invitación.');
+      checkbox.disabled = false;
+      return;
+    }
+
+    row.invitacion_enviada = checked;
+    renderWeddingLists();
+  }
+
   function renderWeddingSide(side, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -396,12 +435,39 @@
       return;
     }
 
-    rows.forEach(row => {
+    const head = document.createElement('div');
+    head.className = 'wedding-list-table-head';
+    ['N°', 'Nombre', 'Invitación', 'Acciones'].forEach(text => {
+      const cell = document.createElement('span');
+      cell.textContent = text;
+      head.appendChild(cell);
+    });
+    container.appendChild(head);
+
+    rows.forEach((row, index) => {
       const item = document.createElement('div');
-      item.className = 'wedding-person-row';
+      item.className = 'wedding-person-row' + (row.invitacion_enviada ? ' is-sent' : '');
+
+      const number = document.createElement('span');
+      number.className = 'wedding-person-number';
+      number.textContent = String(index + 1);
 
       const name = document.createElement('span');
+      name.className = 'wedding-person-name';
       name.textContent = row.nombre || 'Sin nombre';
+      name.title = row.nombre || 'Sin nombre';
+
+      const sentLabel = document.createElement('label');
+      sentLabel.className = 'wedding-sent-check';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !!row.invitacion_enviada;
+      const sentText = document.createElement('span');
+      sentText.textContent = 'Enviada';
+      checkbox.addEventListener('change', function () {
+        toggleWeddingInvitation(row, this.checked, this);
+      });
+      sentLabel.append(checkbox, sentText);
 
       const actions = document.createElement('div');
       actions.className = 'wedding-person-actions';
@@ -419,14 +485,18 @@
       del.addEventListener('click', () => deleteWeddingName(row));
 
       actions.append(edit, del);
-      item.append(name, actions);
+      item.append(number, name, sentLabel, actions);
       container.appendChild(item);
     });
   }
 
   function renderWeddingLists() {
-    const groomCount = weddingListRows.filter(row => row.lado === 'novio').length;
-    const brideCount = weddingListRows.filter(row => row.lado === 'novia').length;
+    const groomRows = weddingListRows.filter(row => row.lado === 'novio');
+    const brideRows = weddingListRows.filter(row => row.lado === 'novia');
+    const groomCount = groomRows.length;
+    const brideCount = brideRows.length;
+    const groomSent = groomRows.filter(row => row.invitacion_enviada).length;
+    const brideSent = brideRows.filter(row => row.invitacion_enviada).length;
     const setText = (id, value) => {
       const el = document.getElementById(id);
       if (el) el.textContent = value;
@@ -437,6 +507,8 @@
     setText('weddingListGrandTotal', groomCount + brideCount);
     setText('groomInlineCount', groomCount);
     setText('brideInlineCount', brideCount);
+    setText('groomSentCount', groomSent);
+    setText('brideSentCount', brideSent);
 
     renderWeddingSide('novio', 'groomListItems');
     renderWeddingSide('novia', 'brideListItems');
