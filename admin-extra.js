@@ -372,7 +372,13 @@
     .wedding-list-columns{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
     .wedding-list-card{min-width:0;background:var(--admin-surface);border:1px solid var(--admin-line);border-radius:20px;padding:20px;box-shadow:var(--admin-shadow)}
     .wedding-list-card h3{margin:0;color:var(--admin-gold-dark);font-size:20px}
-    .wedding-list-card .wedding-list-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
+    .wedding-list-card .wedding-list-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:0}
+    .wedding-list-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .wedding-list-toggle{border:1px solid rgba(143,105,40,.3);background:var(--admin-surface-2);color:var(--admin-gold-dark);border-radius:12px;padding:9px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .wedding-list-toggle:hover{border-color:var(--admin-olive);background:#f1f3eb}
+    .wedding-list-toggle:focus-visible{outline:3px solid rgba(111,122,88,.26);outline-offset:2px}
+    .wedding-list-content{margin-top:18px}
+    .wedding-list-content[hidden]{display:none!important}
     .wedding-list-subcount{margin:4px 0 0;color:var(--admin-muted);font-size:12px;line-height:1.5}
     .wedding-side-count{display:inline-grid;place-items:center;min-width:42px;height:34px;padding:0 10px;border-radius:999px;background:var(--admin-surface-2);border:1px solid var(--admin-line);font-weight:800;color:var(--admin-gold-dark)}
     .wedding-list-card textarea{min-height:105px}
@@ -647,14 +653,19 @@
               <h3>Lista del novio</h3>
               <p class="wedding-list-subcount" id="groomListSummary">0 links · 0 por enviar · 0 enviadas</p>
             </div>
-            <span class="wedding-side-count" id="groomInlineCount">0</span>
+            <div class="wedding-list-head-actions">
+              <span class="wedding-side-count" id="groomInlineCount">0</span>
+              <button class="wedding-list-toggle" type="button" id="toggleGroomList" aria-controls="groomListContent" aria-expanded="false" aria-label="Abrir lista del novio">Abrir lista ▾</button>
+            </div>
           </div>
-          <label for="groomNamesInput">Agregar invitados</label>
-          <textarea id="groomNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Juan Pérez&#10;María Soto"></textarea>
-          <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
-          <button class="green-button" type="button" id="addGroomNamesBtn">Agregar a lista del novio</button>
-          <p class="status" id="groomListStatus"></p>
-          <div class="wedding-list-scroll"><div class="wedding-list-items" id="groomListItems"></div></div>
+          <div class="wedding-list-content" id="groomListContent" hidden>
+            <label for="groomNamesInput">Agregar invitados</label>
+            <textarea id="groomNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Juan Pérez&#10;María Soto"></textarea>
+            <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
+            <button class="green-button" type="button" id="addGroomNamesBtn">Agregar a lista del novio</button>
+            <p class="status" id="groomListStatus"></p>
+            <div class="wedding-list-scroll"><div class="wedding-list-items" id="groomListItems"></div></div>
+          </div>
         </article>
 
         <article class="wedding-list-card">
@@ -663,14 +674,19 @@
               <h3>Lista de la novia</h3>
               <p class="wedding-list-subcount" id="brideListSummary">0 links · 0 por enviar · 0 enviadas</p>
             </div>
-            <span class="wedding-side-count" id="brideInlineCount">0</span>
+            <div class="wedding-list-head-actions">
+              <span class="wedding-side-count" id="brideInlineCount">0</span>
+              <button class="wedding-list-toggle" type="button" id="toggleBrideList" aria-controls="brideListContent" aria-expanded="false" aria-label="Abrir lista de la novia">Abrir lista ▾</button>
+            </div>
           </div>
-          <label for="brideNamesInput">Agregar invitados</label>
-          <textarea id="brideNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Ana González&#10;Pedro Muñoz"></textarea>
-          <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
-          <button class="green-button" type="button" id="addBrideNamesBtn">Agregar a lista de la novia</button>
-          <p class="status" id="brideListStatus"></p>
-          <div class="wedding-list-scroll"><div class="wedding-list-items" id="brideListItems"></div></div>
+          <div class="wedding-list-content" id="brideListContent" hidden>
+            <label for="brideNamesInput">Agregar invitados</label>
+            <textarea id="brideNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Ana González&#10;Pedro Muñoz"></textarea>
+            <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
+            <button class="green-button" type="button" id="addBrideNamesBtn">Agregar a lista de la novia</button>
+            <p class="status" id="brideListStatus"></p>
+            <div class="wedding-list-scroll"><div class="wedding-list-items" id="brideListItems"></div></div>
+          </div>
         </article>
       </div>
     `;
@@ -680,6 +696,22 @@
       setSection('weddingListsSection');
       document.getElementById('sectionTitle').textContent = 'Lista de novios';
       loadWeddingLists();
+    });
+
+    // Cada lista empieza cerrada y puede abrirse/cerrarse por separado.
+    [
+      ['toggleGroomList', 'groomListContent', 'del novio'],
+      ['toggleBrideList', 'brideListContent', 'de la novia']
+    ].forEach(([buttonId, contentId, description]) => {
+      const button = document.getElementById(buttonId);
+      const content = document.getElementById(contentId);
+      button.addEventListener('click', () => {
+        const expanded = content.hidden;
+        content.hidden = !expanded;
+        button.setAttribute('aria-expanded', String(expanded));
+        button.setAttribute('aria-label', (expanded ? 'Cerrar lista ' : 'Abrir lista ') + description);
+        button.textContent = expanded ? 'Cerrar lista ▴' : 'Abrir lista ▾';
+      });
     });
 
     document.getElementById('addGroomNamesBtn').addEventListener('click', function () {
