@@ -11,6 +11,8 @@
   style.textContent = `
     .mode-grid.admin-three-modes{grid-template-columns:repeat(3,minmax(0,1fr))}
     .type-badge.individual_acompanante{background:#e7e6f2;color:#585274}
+    .invite-delete-button{border:1px solid rgba(151,82,72,.4)!important;background:#fff7f6!important;color:#953e38!important}
+    .invite-delete-button:hover{background:#fbe9e6!important}
     .dashboard-mini-grid.admin-three-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
     .companion-form-note{margin:8px 0 2px;color:#766e66;font-size:13px;line-height:1.45}
     @media(max-width:980px){.mode-grid.admin-three-modes{grid-template-columns:1fr}.dashboard-mini-grid.admin-three-stats{grid-template-columns:1fr}}
@@ -224,6 +226,42 @@
     });
   }
 
+  // Eliminar sólo si sigue desactivada en la base de datos. Las claves foráneas
+  // de invitados y lista_novios usan ON DELETE SET NULL y conservan sus registros.
+  async function deleteInactiveInvitation(invite, button) {
+    if (invite.activa) return;
+    const title = invite.titulo_portada || invite.familia || formatNames(invite.invitados || []) || 'esta invitación';
+    const confirmed = confirm(
+      '¿Eliminar definitivamente "' + title + '"?\n\n' +
+      'El enlace dejará de funcionar y no se podrá recuperar. ' +
+      'Las listas y respuestas de asistentes se conservarán, pero quedarán desvinculadas.'
+    );
+    if (!confirmed) return;
+
+    button.disabled = true;
+    button.textContent = 'Eliminando...';
+    try {
+      const result = await client.from('invitaciones_personalizadas')
+        .delete()
+        .eq('id', invite.id)
+        .eq('activa', false)
+        .select('id');
+      if (result.error) throw result.error;
+      if (!result.data || result.data.length !== 1) {
+        alert('No se eliminó la invitación. Es posible que se haya reactivado; actualiza los datos e inténtalo nuevamente.');
+        await loadAdminData();
+        return;
+      }
+      await loadAdminData();
+    } catch (error) {
+      console.error('No se pudo eliminar la invitación:', error);
+      alert('No se pudo eliminar la invitación. Comprueba la conexión e inténtalo nuevamente.');
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Eliminar';
+    }
+  }
+
   function patchRenderers() {
     renderInvites = function () {
       const container = document.getElementById('personalInvitesList');
@@ -261,7 +299,23 @@
         const share = document.createElement('button'); share.className='mini-button compact-button'; share.textContent='Compartir'; share.onclick=()=>shareInvitation('native',input.value,h3.textContent); actions.appendChild(share);
         const email = document.createElement('button'); email.className='mini-button compact-button'; email.textContent='Correo'; email.onclick=()=>shareInvitation('email',input.value,h3.textContent); actions.appendChild(email);
         const edit = document.createElement('button'); edit.className='mini-button compact-button'; edit.textContent='Editar portada'; edit.onclick=async()=>{ const value=prompt('Texto de portada:',invite.titulo_portada||''); if(value===null||!value.trim()) return; await client.from('invitaciones_personalizadas').update({titulo_portada:value.trim(),updated_at:new Date().toISOString()}).eq('id',invite.id); await loadAdminData(); }; actions.appendChild(edit);
-        const toggle = document.createElement('button'); toggle.className='mini-button compact-button'; toggle.textContent=invite.activa?'Desactivar':'Reactivar'; toggle.onclick=async()=>{ await client.from('invitaciones_personalizadas').update({activa:!invite.activa,updated_at:new Date().toISOString()}).eq('id',invite.id); await loadAdminData(); }; actions.appendChild(toggle);
+        const toggle = document.createElement('button'); toggle.className='mini-button compact-button'; toggle.textContent=invite.activa?'Desactivar':'Reactivar'; toggle.onclick=async()=>{
+          toggle.disabled = true;
+          const result = await client.from('invitaciones_personalizadas')
+            .update({activa:!invite.activa,updated_at:new Date().toISOString()})
+            .eq('id',invite.id);
+          if (result.error) { console.error(result.error); alert('No se pudo actualizar el estado de la invitación.'); toggle.disabled = false; return; }
+          await loadAdminData();
+        }; actions.appendChild(toggle);
+        if (!invite.activa) {
+          const remove = document.createElement('button');
+          remove.className = 'mini-button compact-button invite-delete-button';
+          remove.type = 'button';
+          remove.textContent = 'Eliminar';
+          remove.title = 'Eliminar definitivamente esta invitación desactivada';
+          remove.addEventListener('click', () => deleteInactiveInvitation(invite, remove));
+          actions.appendChild(remove);
+        }
         const changeSide = document.createElement('button');
         changeSide.className = 'mini-button compact-button';
         changeSide.type = 'button';
