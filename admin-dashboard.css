@@ -98,3 +98,38 @@ body.admin-body .hidden{display:none!important}
 @media(max-width:700px){
   .dashboard-main{padding:15px 12px 28px}.dashboard-header{display:block;margin-bottom:18px}.header-date{display:inline-block;margin-top:10px}.dashboard-header h1{font-size:29px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric-card{padding:14px}.metric-card strong{font-size:28px}.dashboard-columns,.mode-grid,.personal-invites-list{grid-template-columns:1fr}.dashboard-card,.form-card{padding:17px}.generated-link-row{grid-template-columns:1fr}.dashboard-main .green-button{width:100%;min-width:0}.sidebar-footer{grid-template-columns:1fr}.section-intro{display:block}.invite-card-top,.family-header{display:block}.response-badge{margin-top:8px}.dashboard-mini-grid{grid-template-columns:1fr 1fr}.admin-table,.mini-table{min-width:680px}
 }
+
+
+/* Secciones novio / novia ------------------------------------------------ */
+.invite-owner-selection{padding:18px 20px;margin-bottom:18px;border:1px solid var(--admin-line);border-radius:18px;background:var(--admin-surface);box-shadow:var(--admin-shadow)}
+.invite-owner-selection label{display:block;margin:0 0 10px;font-size:14px;font-weight:800;color:var(--admin-gold-dark)}
+.invite-owner-selection select{max-width:500px}
+.invite-owner-selection .form-help{margin:10px 0 0}
+.invitation-side-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:18px}
+.invitation-side-card{display:flex;flex-direction:column;gap:12px;align-items:flex-start;min-height:205px;padding:25px;border:1px solid rgba(143,105,40,.2);border-radius:21px;background:var(--admin-surface);box-shadow:var(--admin-shadow);color:var(--admin-muted);font:inherit;text-align:left;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.invitation-side-card:hover,.invitation-side-card:focus-visible{transform:translateY(-2px);border-color:var(--admin-olive);box-shadow:0 16px 35px rgba(56,46,35,.13)}
+.invitation-side-card:focus-visible{outline:3px solid rgba(111,122,88,.24);outline-offset:2px}
+.invitation-side-eyebrow{text-transform:uppercase;letter-spacing:.14em;color:var(--admin-gold-dark);font-size:11px;font-weight:800}
+.invitation-side-card strong{font-size:24px;line-height:1.2;color:var(--admin-gold-dark)}
+.invitation-side-card>span:not(.invitation-side-eyebrow):not(.invitation-side-count){font-size:13px;line-height:1.5}
+.invitation-side-count{margin-top:auto;display:inline-block;border-radius:999px;padding:7px 12px;background:#edf1e8;color:#506245;font-size:13px;font-weight:800}
+.invitation-side-header{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:0 0 22px}
+.invitation-side-header h2{margin:0;color:var(--admin-gold-dark);font-size:23px}
+.invitation-side-header .mini-button{margin:0;width:auto}
+.unassigned-invites{border:1px solid rgba(143,105,40,.22);border-radius:17px;padding:15px 18px;background:var(--admin-surface);margin-top:14px}
+.unassigned-invites summary{font-size:14px;font-weight:800;color:var(--admin-gold-dark);cursor:pointer}
+.unassigned-invites .small-muted{margin:13px 0}
+.unassigned-invites-list{display:grid;gap:8px;margin-top:14px}
+.unassigned-invite-row{display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid var(--admin-line);border-radius:12px;background:var(--admin-surface-2);padding:12px 14px}
+.unassigned-invite-row>div:first-child{min-width:0;overflow-wrap:anywhere}
+.unassigned-invite-row strong,.unassigned-invite-row small{display:block}
+.unassigned-invite-row small{margin-top:5px;color:var(--admin-muted)}
+.unassigned-invite-actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.unassigned-invite-actions .mini-button{margin:0;width:auto}
+@media(max-width:720px){
+  .invitation-side-grid{grid-template-columns:1fr}
+  .invitation-side-card{min-height:160px;padding:19px}
+  .invitation-side-card strong{font-size:21px}
+  .unassigned-invite-row{align-items:stretch;flex-direction:column}
+  .unassigned-invite-actions{flex-shrink:1}
+}

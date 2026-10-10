@@ -25,6 +25,104 @@
     return clean.slice(0, -1).join(', ') + ' y ' + clean[clean.length - 1];
   }
 
+
+  // Navegación y clasificación persistente de las invitaciones.
+  let activeInvitationSide = null;
+  window.activeInvitationSide = null;
+
+  function linkedInvitationSides(invite) {
+    return new Set(weddingListRows
+      .filter(row => row.invitacion_id === invite.id)
+      .map(row => row.lado));
+  }
+
+  async function assignInvitationSide(invite, lado) {
+    if (!['novio', 'novia'].includes(lado)) return;
+    const linkedSides = linkedInvitationSides(invite);
+    if (linkedSides.size && (linkedSides.size > 1 || !linkedSides.has(lado))) {
+      alert('Esta invitación está vinculada a la lista del otro lado. Revisa primero su vinculación en «Lista de novios».');
+      return;
+    }
+    const result = await client.from('invitaciones_personalizadas')
+      .update({ lado, updated_at: new Date().toISOString() })
+      .eq('id', invite.id);
+    if (result.error) {
+      console.error(result.error);
+      alert('No se pudo guardar la clasificación de esta invitación.');
+      return;
+    }
+    invite.lado = lado;
+    renderInvites();
+  }
+
+  function renderUnassignedInvites(rows) {
+    const container = document.getElementById('unassignedInvitesList');
+    if (!container) return;
+    container.replaceChildren();
+    rows.forEach(invite => {
+      const row = document.createElement('div');
+      row.className = 'unassigned-invite-row';
+      const info = document.createElement('div');
+      const heading = document.createElement('strong');
+      heading.textContent = invite.titulo_portada || invite.familia || formatNames(invite.invitados || []) || 'Invitación';
+      const type = document.createElement('small');
+      type.textContent = typeLabels[invite.tipo] || invite.tipo;
+      info.append(heading, type);
+      const actions = document.createElement('div');
+      actions.className = 'unassigned-invite-actions';
+      for (const [lado, label] of [['novio', 'Asignar al novio'], ['novia', 'Asignar a la novia']]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'mini-button compact-button';
+        button.textContent = label;
+        button.addEventListener('click', () => assignInvitationSide(invite, lado));
+        actions.appendChild(button);
+      }
+      row.append(info, actions);
+      container.appendChild(row);
+    });
+  }
+
+  function refreshInvitationSideView() {
+    const chooser = document.getElementById('invitationSideChooser');
+    const details = document.getElementById('invitationSideDetails');
+    const unassignedPanel = document.getElementById('unassignedInvites');
+    if (!chooser || !details || !unassignedPanel) return;
+    chooser.classList.toggle('hidden', !!activeInvitationSide);
+    details.classList.toggle('hidden', !activeInvitationSide);
+    const groomCount = allInvites.filter(i => i.lado === 'novio').length;
+    const brideCount = allInvites.filter(i => i.lado === 'novia').length;
+    document.getElementById('groomInvitationCount').textContent = groomCount + (groomCount === 1 ? ' invitación' : ' invitaciones');
+    document.getElementById('brideInvitationCount').textContent = brideCount + (brideCount === 1 ? ' invitación' : ' invitaciones');
+    if (activeInvitationSide) {
+      document.getElementById('invitationSideHeading').textContent = activeInvitationSide === 'novio' ? 'Invitaciones del novio' : 'Invitaciones de la novia';
+      unassignedPanel.classList.add('hidden');
+    } else {
+      const pending = allInvites.filter(i => i.lado !== 'novio' && i.lado !== 'novia');
+      unassignedPanel.classList.toggle('hidden', pending.length === 0);
+      document.getElementById('unassignedInvitesSummary').textContent = 'Pendientes de clasificar (' + pending.length + ')';
+      renderUnassignedInvites(pending);
+    }
+  }
+
+  function selectInvitationSide(side) {
+    activeInvitationSide = side;
+    window.activeInvitationSide = side;
+    activeFilter = 'all';
+    document.querySelectorAll('#linksSection .filter-chip').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+    renderInvites();
+    const main = document.querySelector('.dashboard-main');
+    if (main) main.scrollTop = 0;
+  }
+
+  function setupInvitationSideNavigation() {
+    document.querySelectorAll('[data-invite-side]').forEach(button => {
+      button.addEventListener('click', () => selectInvitationSide(button.dataset.inviteSide));
+    });
+    document.getElementById('backToInvitationSides').addEventListener('click', () => selectInvitationSide(null));
+    window.addEventListener('admin:invitations-opened', () => selectInvitationSide(null));
+  }
+
   function setupCreateMode() {
     const grid = document.querySelector('#createSection .mode-grid');
     const openForm = document.getElementById('openInviteForm');
@@ -74,13 +172,18 @@
     document.getElementById('createCompanionBtn').addEventListener('click', async function () {
       const name = principal.value.trim();
       const title = cover.value.trim();
+      const lado = document.getElementById('inviteSideSelect').value;
+      if (!lado) {
+        inviteCreateStatus.textContent = 'Selecciona si la invitación es del novio o de la novia.';
+        return;
+      }
       if (!name || !title) {
         inviteCreateStatus.textContent = 'Completa el nombre de la persona y el texto de portada.';
         return;
       }
       inviteCreateStatus.textContent = 'Creando invitación...';
       const result = await client.from('invitaciones_personalizadas').insert([{
-        tipo: 'individual_acompanante', titulo_portada: title, invitados: [name], familia: null
+        tipo: 'individual_acompanante', titulo_portada: title, invitados: [name], familia: null, lado
       }]).select('*').single();
       if (result.error) {
         console.error(result.error);
@@ -125,7 +228,9 @@
     renderInvites = function () {
       const container = document.getElementById('personalInvitesList');
       container.innerHTML = '';
-      let rows = allInvites.slice();
+      refreshInvitationSideView();
+      if (!activeInvitationSide) return;
+      let rows = allInvites.filter(i => i.lado === activeInvitationSide);
       if (['lista_cerrada','familia_libre','individual_acompanante'].includes(activeFilter)) rows = rows.filter(i => i.tipo === activeFilter);
       if (activeFilter === 'pending') rows = rows.filter(i => !i.respondida_at);
       if (activeFilter === 'answered') rows = rows.filter(i => !!i.respondida_at);
@@ -157,6 +262,12 @@
         const email = document.createElement('button'); email.className='mini-button compact-button'; email.textContent='Correo'; email.onclick=()=>shareInvitation('email',input.value,h3.textContent); actions.appendChild(email);
         const edit = document.createElement('button'); edit.className='mini-button compact-button'; edit.textContent='Editar portada'; edit.onclick=async()=>{ const value=prompt('Texto de portada:',invite.titulo_portada||''); if(value===null||!value.trim()) return; await client.from('invitaciones_personalizadas').update({titulo_portada:value.trim(),updated_at:new Date().toISOString()}).eq('id',invite.id); await loadAdminData(); }; actions.appendChild(edit);
         const toggle = document.createElement('button'); toggle.className='mini-button compact-button'; toggle.textContent=invite.activa?'Desactivar':'Reactivar'; toggle.onclick=async()=>{ await client.from('invitaciones_personalizadas').update({activa:!invite.activa,updated_at:new Date().toISOString()}).eq('id',invite.id); await loadAdminData(); }; actions.appendChild(toggle);
+        const changeSide = document.createElement('button');
+        changeSide.className = 'mini-button compact-button';
+        changeSide.type = 'button';
+        changeSide.textContent = invite.lado === 'novio' ? 'Mover a la novia' : 'Mover al novio';
+        changeSide.addEventListener('click', () => assignInvitationSide(invite, invite.lado === 'novio' ? 'novia' : 'novio'));
+        actions.appendChild(changeSide);
         card.appendChild(actions); container.appendChild(card);
       });
     };
@@ -583,7 +694,8 @@
       tipo: 'lista_cerrada',
       titulo_portada: 'Invitación para ' + row.nombre,
       invitados: [row.nombre],
-      familia: null
+      familia: null,
+      lado: row.lado
     }]).select('*').single();
 
     if (result.error) {
@@ -617,19 +729,38 @@
       return;
     }
 
-    const options = allInvites.map((invite, index) => {
-      return (index + 1) + '. ' + invitationDisplayTitle(invite);
-    }).join('\n');
+    const available = allInvites.filter(invite =>
+      (!invite.lado || invite.lado === row.lado) &&
+      ![...linkedInvitationSides(invite)].some(lado => lado !== row.lado)
+    );
+    if (!available.length) {
+      alert('No hay invitaciones disponibles para este lado.');
+      return;
+    }
+    const options = available.map((invite, index) =>
+      (index + 1) + '. ' + invitationDisplayTitle(invite)
+    ).join('\n');
 
     const answer = prompt('Escribe el número del link que quieres vincular con “' + row.nombre + '”:\n\n' + options);
     if (answer === null) return;
     const index = Number.parseInt(answer, 10) - 1;
-    const invite = allInvites[index];
+    const invite = available[index];
     if (!invite) {
       alert('Selección no válida.');
       return;
     }
 
+    if (!invite.lado) {
+      const assigned = await client.from('invitaciones_personalizadas')
+        .update({ lado: row.lado, updated_at: new Date().toISOString() })
+        .eq('id', invite.id);
+      if (assigned.error) {
+        console.error(assigned.error);
+        alert('No se pudo asignar la invitación al lado correspondiente.');
+        return;
+      }
+      invite.lado = row.lado;
+    }
     const result = await client
       .from('lista_novios')
       .update({ invitacion_id: invite.id, updated_at: new Date().toISOString() })
@@ -643,6 +774,7 @@
 
     row.invitacion_id = invite.id;
     renderWeddingLists();
+    renderInvites();
   }
 
   async function editWeddingName(row) {
@@ -1045,12 +1177,25 @@
 
       const matches = allInvites.filter(invite => {
         const names = (invite.invitados || []).map(normalizeWeddingName);
-        return names.includes(key) || normalizeWeddingName(invite.familia) === key;
+        return (!invite.lado || invite.lado === row.lado) &&
+          ![...linkedInvitationSides(invite)].some(lado => lado !== row.lado) &&
+          (names.includes(key) || normalizeWeddingName(invite.familia) === key);
       });
 
       const uniqueIds = Array.from(new Set(matches.map(invite => invite.id)));
       if (uniqueIds.length !== 1) continue;
 
+      const invite = matches[0];
+      if (!invite.lado) {
+        const assigned = await client.from('invitaciones_personalizadas')
+          .update({ lado: row.lado, updated_at: new Date().toISOString() })
+          .eq('id', invite.id);
+        if (assigned.error) {
+          console.error(assigned.error);
+          continue;
+        }
+        invite.lado = row.lado;
+      }
       const result = await client
         .from('lista_novios')
         .update({ invitacion_id: uniqueIds[0], updated_at: new Date().toISOString() })
@@ -1105,6 +1250,7 @@
   setupCreateMode();
   setupDashboardStat();
   setupFilter();
+  setupInvitationSideNavigation();
   patchRenderers();
   setupGeneratedShareControls();
 
