@@ -92,6 +92,16 @@
           <p>Selecciona el tipo de invitación. Solo se mostrará el formulario correspondiente.</p>
         </div>
 
+        <div class="invite-owner-selection">
+          <label for="inviteSideSelect">Invitación de</label>
+          <select id="inviteSideSelect" required>
+            <option value="">Selecciona al novio o la novia</option>
+            <option value="novio">Novio · Esthefano</option>
+            <option value="novia">Novia · Carolina</option>
+          </select>
+          <p class="form-help">La invitación quedará guardada en la sección seleccionada.</p>
+        </div>
+
         <div class="mode-grid">
           <button class="mode-card active" type="button" data-mode="lista_cerrada">
             <strong>Lista definida</strong>
@@ -135,9 +145,37 @@
 
       <section class="dashboard-section" id="linksSection">
         <div class="section-intro">
-          <h2>Invitaciones creadas</h2>
-          <p>Todos los links, separados por tipo y con su estado.</p>
+          <div>
+            <h2>Invitaciones creadas</h2>
+            <p>Selecciona de quién son las invitaciones que quieres administrar.</p>
+          </div>
         </div>
+        <div id="invitationSideChooser" class="invitation-side-grid">
+          <button class="invitation-side-card" type="button" data-invite-side="novio">
+            <span class="invitation-side-eyebrow">Esthefano</span>
+            <strong>Invitaciones del novio</strong>
+            <span>Ver y administrar las invitaciones del novio</span>
+            <span class="invitation-side-count" id="groomInvitationCount">0 invitaciones</span>
+          </button>
+          <button class="invitation-side-card" type="button" data-invite-side="novia">
+            <span class="invitation-side-eyebrow">Carolina</span>
+            <strong>Invitaciones de la novia</strong>
+            <span>Ver y administrar las invitaciones de la novia</span>
+            <span class="invitation-side-count" id="brideInvitationCount">0 invitaciones</span>
+          </button>
+        </div>
+        <div id="unassignedInvites" class="unassigned-invites hidden">
+          <details>
+            <summary id="unassignedInvitesSummary">Invitaciones antiguas pendientes de clasificar</summary>
+            <p class="small-muted">Estas invitaciones ya existen. Asigna cada una al novio o a la novia; sus enlaces y confirmaciones se mantendrán.</p>
+            <div id="unassignedInvitesList" class="unassigned-invites-list"></div>
+          </details>
+        </div>
+        <div id="invitationSideDetails" class="hidden">
+          <div class="invitation-side-header">
+            <button type="button" class="mini-button compact-button" id="backToInvitationSides">← Volver a invitaciones</button>
+            <h2 id="invitationSideHeading">Invitaciones</h2>
+          </div>
         <div class="filter-row">
           <button class="filter-chip active" data-filter="all">Todas</button>
           <button class="filter-chip" data-filter="lista_cerrada">Lista definida</button>
@@ -146,6 +184,7 @@
           <button class="filter-chip" data-filter="answered">Respondidas</button>
         </div>
         <div id="personalInvitesList" class="personal-invites-list"></div>
+        </div>
       </section>
 
       <section class="dashboard-section" id="familiesSection">
@@ -239,6 +278,7 @@
       document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.section === sectionId));
       const titles = {dashboardSection:"Dashboard",createSection:"Crear invitación",linksSection:"Invitaciones",familiesSection:"Confirmaciones",guestsSection:"Asistentes"};
       document.getElementById("sectionTitle").textContent = titles[sectionId] || "Administrador";
+      if (sectionId === "linksSection") window.dispatchEvent(new Event("admin:invitations-opened"));
       window.scrollTo({top:0,behavior:"smooth"});
     }
 
@@ -265,9 +305,11 @@
     document.getElementById("createClosedBtn").addEventListener("click", async function(){
       const title = document.getElementById("closedCoverTitle").value.trim();
       const names = Array.from(new Set(document.getElementById("closedNames").value.split(/\n+/).map(v=>v.trim()).filter(Boolean)));
+      const lado = document.getElementById("inviteSideSelect").value;
+      if (!lado) { inviteCreateStatus.textContent = "Selecciona si la invitación es del novio o de la novia."; return; }
       if (!title || !names.length) { inviteCreateStatus.textContent = "Completa el texto de portada y agrega al menos una persona."; return; }
       inviteCreateStatus.textContent = "Creando invitación...";
-      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"lista_cerrada",titulo_portada:title,invitados:names,familia:null}]).select("*").single();
+      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"lista_cerrada",titulo_portada:title,invitados:names,familia:null,lado}]).select("*").single();
       if (result.error) { console.error(result.error); inviteCreateStatus.textContent = "No se pudo crear el link."; return; }
       document.getElementById("closedCoverTitle").value = ""; document.getElementById("closedNames").value = "";
       inviteCreateStatus.textContent = "Invitación creada correctamente."; showGenerated(result.data); await loadAdminData();
@@ -276,9 +318,11 @@
     document.getElementById("createOpenBtn").addEventListener("click", async function(){
       const family = document.getElementById("openFamilyName").value.trim();
       const title = document.getElementById("openCoverTitle").value.trim();
+      const lado = document.getElementById("inviteSideSelect").value;
+      if (!lado) { inviteCreateStatus.textContent = "Selecciona si la invitación es del novio o de la novia."; return; }
       if (!family || !title) { inviteCreateStatus.textContent = "Completa el nombre de la familia y el texto de portada."; return; }
       inviteCreateStatus.textContent = "Creando invitación...";
-      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"familia_libre",titulo_portada:title,familia:family,invitados:[]}]).select("*").single();
+      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"familia_libre",titulo_portada:title,familia:family,invitados:[],lado}]).select("*").single();
       if (result.error) { console.error(result.error); inviteCreateStatus.textContent = "No se pudo crear el link."; return; }
       document.getElementById("openFamilyName").value = ""; document.getElementById("openCoverTitle").value = ""; delete document.getElementById("openCoverTitle").dataset.edited;
       inviteCreateStatus.textContent = "Invitación familiar creada correctamente."; showGenerated(result.data); await loadAdminData();
@@ -288,7 +332,7 @@
 
     function renderInvites() {
       const container = document.getElementById("personalInvitesList"); container.innerHTML = "";
-      let rows = allInvites.slice();
+      let rows = allInvites.filter(i => i.lado === window.activeInvitationSide);
       if (activeFilter === "lista_cerrada" || activeFilter === "familia_libre") rows = rows.filter(i => i.tipo === activeFilter);
       if (activeFilter === "pending") rows = rows.filter(i => !i.respondida_at);
       if (activeFilter === "answered") rows = rows.filter(i => !!i.respondida_at);
