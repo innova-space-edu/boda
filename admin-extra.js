@@ -636,12 +636,12 @@
     card.appendChild(panel);
   }
 
-  async function askStartDeadline(invite) {
+  async function askStartDeadline(invite, method) {
     if (!invite || !invite.activa) {
       alert('No es posible compartir: la invitación no está disponible.');
       return false;
     }
-    if (invite.plazo_inicio_at) return true;
+    if (invite.plazo_inicio_at) return { allowed: true, popup: null };
     return new Promise(resolve => {
       const shade = document.createElement('div');
       shade.className = 'deadline-modal-shade';
@@ -665,14 +665,22 @@
       const without = button('Compartir sin iniciar', false);
       const cancel = button('Cancelar', false);
       function close(value) { shade.remove(); resolve(value); }
-      without.onclick = () => close(true);
-      cancel.onclick = () => close(false);
+      function reserveWhatsAppTab() {
+        if (method !== 'whatsapp') return null;
+        const popup = window.open('', '_blank');
+        if (popup) popup.opener = null;
+        return popup;
+      }
+      without.onclick = () => close({ allowed: true, popup: reserveWhatsAppTab() });
+      cancel.onclick = () => close(null);
       start.onclick = async () => {
+        const popup = reserveWhatsAppTab();
         start.disabled = true; without.disabled = true; cancel.disabled = true;
         start.textContent = 'Iniciando...';
         const result = await client.rpc('iniciar_plazo_invitacion', { p_invitacion_id: invite.id });
         if (result.error || !result.data?.plazo_fin_at) {
           console.error(result.error);
+          if (popup) popup.close();
           alert('No se pudo iniciar el plazo. No se compartió el enlace.');
           start.disabled = false; without.disabled = false; cancel.disabled = false;
           start.textContent = 'Sí, iniciar ahora';
@@ -682,7 +690,7 @@
         invite.plazo_fin_at = result.data.plazo_fin_at;
         invite.plazo_horas = result.data.plazo_horas;
         renderInvites();
-        close(true);
+        close({ allowed: true, popup });
       };
       actions.append(start, without, cancel);
       card.append(title, info, actions);
@@ -695,14 +703,17 @@
   async function shareInvitation(method, url, title, row, clickedButton) {
     if (!url) return;
     const invite = findInviteByUrl(url);
-    if (!(await askStartDeadline(invite))) return;
+    const permission = await askStartDeadline(invite, method);
+    if (!permission?.allowed) return;
     if (method === 'copy') { await copyText(url, clickedButton); return; }
     const message = buildShareMessage(title, url);
     const nextStage = row ? shareStageInfo(row) : null;
 
     if (method === 'whatsapp') {
       if (row && nextStage) armShareConfirmation(row, nextStage.stage);
-      const opened = window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
+      const destination = 'https://wa.me/?text=' + encodeURIComponent(message);
+      const opened = permission.popup || window.open(destination, '_blank', 'noopener,noreferrer');
+      if (permission.popup) permission.popup.location.replace(destination);
       if (!opened) {
         await copyText(url);
         alert('Tu navegador bloqueó la ventana de WhatsApp. Copiamos el enlace para que puedas compartirlo manualmente.');
