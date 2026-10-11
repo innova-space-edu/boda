@@ -34,6 +34,13 @@
         </div>
       </div>
 
+      <button class="mobile-nav-toggle" id="mobileNavToggle" type="button"
+              aria-label="Abrir menú de administración" aria-controls="adminMobileMenu"
+              aria-expanded="false">
+        <span class="mobile-nav-toggle-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="mobile-nav-toggle-label">Menú</span>
+      </button>
+      <div class="sidebar-menu-panel" id="adminMobileMenu">
       <nav class="sidebar-nav" aria-label="Panel administrador">
         <button class="nav-item active" data-section="dashboardSection">Dashboard</button>
         <button class="nav-item" data-section="createSection">Crear invitación</button>
@@ -46,6 +53,7 @@
         <button class="side-action" type="button" id="refreshBtn">Actualizar datos</button>
         <a class="side-action as-link" href="index.html">Ver invitación</a>
         <button class="side-action danger" type="button" id="logoutBtn">Cerrar sesión</button>
+      </div>
       </div>
     </aside>
 
@@ -297,6 +305,42 @@
       return Object.values(groups);
     }
 
+    const mobileNavToggle = document.getElementById("mobileNavToggle");
+    const mobileSidebar = document.querySelector(".dashboard-sidebar");
+    const adminMenu = document.getElementById("adminMobileMenu");
+    function setMobileNavOpen(open) {
+      const expanded = !!open;
+      mobileSidebar.classList.toggle("is-menu-open", expanded);
+      mobileNavToggle.setAttribute("aria-expanded", String(expanded));
+      mobileNavToggle.setAttribute("aria-label", expanded
+        ? "Cerrar menú de administración" : "Abrir menú de administración");
+      mobileNavToggle.querySelector(".mobile-nav-toggle-label").textContent =
+        expanded ? "Cerrar" : "Menú";
+    }
+    mobileNavToggle.addEventListener("click", () =>
+      setMobileNavOpen(!mobileSidebar.classList.contains("is-menu-open")));
+    // Delegación: también funciona con la sección «Lista de novios» agregada dinámicamente.
+    adminMenu.addEventListener("click", event => {
+      if (event.target.closest(".nav-item") || event.target.closest(".sidebar-footer")) {
+        setMobileNavOpen(false);
+      }
+    });
+    document.addEventListener("pointerdown", event => {
+      if (mobileSidebar.classList.contains("is-menu-open") &&
+          !mobileSidebar.contains(event.target)) setMobileNavOpen(false);
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && mobileSidebar.classList.contains("is-menu-open")) {
+        setMobileNavOpen(false);
+        mobileNavToggle.focus();
+      }
+    });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 980 && mobileSidebar.classList.contains("is-menu-open")) {
+        setMobileNavOpen(false);
+      }
+    });
+
     function setSection(sectionId) {
       document.querySelectorAll(".dashboard-section").forEach(s => s.classList.toggle("active", s.id === sectionId));
       document.querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.section === sectionId));
@@ -407,13 +451,13 @@
         const yes=f.asistentes.filter(a=>a.estado==="Sí asistiré").length; const no=f.asistentes.length-yes;
         const header=document.createElement("div"); header.className="family-header"; header.innerHTML="<div><h3>"+f.familia+"</h3><p>"+yes+" asiste(n) · "+no+" no asiste(n)</p></div><span>"+f.asistentes.length+" registro(s)</span>"; card.appendChild(header);
         const table=document.createElement("table"); table.className="mini-table"; table.innerHTML="<thead><tr><th>Persona</th><th>Estado</th><th>Contacto</th></tr></thead>"; const tbody=document.createElement("tbody");
-        f.asistentes.forEach(p=>{ const tr=document.createElement("tr"); [p.asistente,p.estado,p.contacto||"Sin contacto"].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});tbody.appendChild(tr)}); table.appendChild(tbody); card.appendChild(table); container.appendChild(card);
+        f.asistentes.forEach(p=>{ const tr=document.createElement("tr"); [p.asistente,p.estado,p.contacto||"Sin contacto"].forEach((v,index)=>{const td=document.createElement("td");td.dataset.label=["Persona","Estado","Contacto"][index];td.textContent=v;tr.appendChild(td)});tbody.appendChild(tr)}); table.appendChild(tbody); card.appendChild(table); container.appendChild(card);
       });
     }
 
     function renderGuests() {
       const tbody=document.getElementById("guestTable"); tbody.innerHTML="";
-      allGuests.map(normalizeRow).forEach(r=>{ const tr=document.createElement("tr"); [r.familia,r.asistente,r.estado,r.contacto||"Sin contacto",r.mensaje||"-"].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)}); const td=document.createElement("td"); const link=makeWhatsapp(r.contacto,r.asistente); td.appendChild(link||document.createTextNode("-")); tr.appendChild(td); tbody.appendChild(tr); });
+      allGuests.map(normalizeRow).forEach(r=>{ const tr=document.createElement("tr"); [r.familia,r.asistente,r.estado,r.contacto||"Sin contacto",r.mensaje||"-"].forEach((v,index)=>{const td=document.createElement("td");td.dataset.label=["Familia","Asistente","Estado","Contacto","Mensaje"][index];td.textContent=v;tr.appendChild(td)}); const td=document.createElement("td"); td.dataset.label="WhatsApp"; const link=makeWhatsapp(r.contacto,r.asistente); td.appendChild(link||document.createTextNode("-")); tr.appendChild(td); tbody.appendChild(tr); });
     }
 
     function renderDashboard(visits) {

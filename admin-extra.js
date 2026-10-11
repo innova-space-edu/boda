@@ -531,6 +531,170 @@
     }
   `;
 
+
+  // Presentación únicamente para ventanas reducidas; desktop conserva la tabla completa.
+  style.textContent += `
+    .wedding-send-stage-label{display:none}
+    @media(max-width:1100px){
+      .wedding-list-summary{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:10px;
+        margin-bottom:14px;
+      }
+      .wedding-list-summary .metric-card{padding:14px;border-radius:16px}
+      .wedding-list-summary .metric-card strong{font-size:30px}
+      .wedding-list-columns{gap:12px}
+      .wedding-list-card{
+        padding:17px;
+        border-radius:18px;
+        box-shadow:0 4px 18px rgba(40,49,38,.045);
+      }
+      .wedding-list-card h3{font-family:inherit;font-size:19px;font-weight:760;letter-spacing:-.02em}
+      .wedding-list-subcount{font-size:12px;line-height:1.55;margin-top:5px}
+      .wedding-list-head-actions{gap:8px}
+      .wedding-list-toggle{
+        min-height:37px;
+        padding:7px 11px;
+        font:700 12px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;
+      }
+      .wedding-side-count{min-width:38px;height:32px;font-size:13px}
+      .wedding-list-content{margin-top:14px}
+      .wedding-list-card textarea{min-height:95px}
+      .wedding-list-scroll{width:100%;max-width:100%;overflow:visible;padding:0}
+      .wedding-list-items{min-width:0;gap:10px;margin-top:12px}
+      .wedding-list-table-head{display:none}
+      .wedding-person-row{
+        display:grid;
+        position:relative;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        grid-template-areas:"identity identity attendance" "send1 send2 send3" "actions actions actions";
+        align-items:start;
+        gap:11px;
+        min-width:0;
+        width:100%;
+        padding:14px 13px 13px 36px;
+        background:#fffdf9;
+        border:1px solid rgba(92,110,82,.13);
+        border-radius:16px;
+        box-shadow:0 3px 14px rgba(40,49,38,.045);
+      }
+      .wedding-person-number{
+        position:absolute;
+        top:18px;
+        left:12px;
+        font-size:11px;
+        font-weight:750;
+        color:#998b74;
+      }
+      .wedding-person-identity{grid-area:identity;min-width:0}
+      .wedding-person-name{
+        white-space:normal!important;
+        overflow:visible!important;
+        text-overflow:clip!important;
+        overflow-wrap:anywhere!important;
+        font-size:15px;
+        line-height:1.35;
+      }
+      .wedding-person-phone{font-size:12px}
+      .wedding-person-identity .wedding-next-send{font-size:11px}
+      .dashboard-main .wedding-attendance-select{
+        grid-area:attendance;
+        width:100%;
+        height:38px!important;
+        padding:6px 9px!important;
+        font-size:13px!important;
+      }
+      .wedding-send-cell{
+        display:grid;
+        grid-template-columns:minmax(0,1fr);
+        align-items:stretch;
+        min-width:0;
+        gap:7px;
+        padding:10px;
+        border:1px solid rgba(143,105,40,.12);
+        border-radius:12px;
+        background:#faf7f1;
+      }
+      .wedding-send-cell.is-stage-1{grid-area:send1}
+      .wedding-send-cell.is-stage-2{grid-area:send2}
+      .wedding-send-cell.is-stage-3{grid-area:send3}
+      .wedding-send-stage-label{
+        display:block;
+        min-width:0;
+        color:#75644c;
+        font:750 11px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;
+      }
+      .wedding-send-check{font-size:12px;min-height:22px}
+      .dashboard-main .wedding-send-date{
+        width:100%!important;
+        min-width:0!important;
+        max-width:100%!important;
+        height:36px!important;
+        padding:6px!important;
+        font-size:12px!important;
+      }
+      .wedding-person-actions{
+        grid-area:actions;
+        justify-content:flex-start;
+        align-items:center;
+        padding-top:10px;
+        border-top:1px solid rgba(143,105,40,.12);
+      }
+      .wedding-person-actions .mini-button{
+        padding:8px 10px!important;
+        border-radius:10px;
+        font:650 12px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif!important;
+      }
+      .wedding-list-create-group{max-width:100%}
+      .wedding-edit-dialog,.share-confirm-card{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+      .wedding-edit-dialog h3,.share-confirm-card h3{font-family:inherit}
+    }
+    @media(max-width:760px){
+      .wedding-list-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .wedding-list-summary .wedding-total-card{grid-column:1/-1}
+      .wedding-list-summary .metric-card{padding:13px}
+      .wedding-list-summary .metric-card strong{font-size:28px}
+      .wedding-list-card{padding:14px}
+      .wedding-person-row{gap:8px}
+      .wedding-person-actions{gap:7px}
+      .wedding-person-actions .mini-button{white-space:normal}
+      .wedding-edit-overlay,.share-confirm-overlay{padding:10px}
+      .wedding-edit-dialog,.share-confirm-card{max-height:calc(100dvh - 20px);overflow-y:auto;padding:19px;border-radius:17px}
+    }
+    @media(max-width:610px){
+      .wedding-list-head{gap:8px}
+      .wedding-list-card h3{font-size:17px}
+      .wedding-list-head-actions{flex:0 0 auto}
+      .wedding-list-toggle{padding:7px 9px}
+      .wedding-person-row{
+        grid-template-columns:minmax(0,1fr);
+        grid-template-areas:"identity" "attendance" "send1" "send2" "send3" "actions";
+        padding:14px 13px 12px 34px;
+      }
+      .dashboard-main .wedding-attendance-select{margin:2px 0;max-width:100%}
+      .wedding-send-cell{
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        grid-template-rows:auto auto;
+        align-items:center;
+        gap:8px 10px;
+        padding:10px 11px;
+      }
+      .wedding-send-stage-label{grid-column:1/-1}
+      .wedding-send-check{min-width:0}
+      .wedding-person-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+      .wedding-person-actions .mini-button{width:100%!important;min-width:0!important}
+      .wedding-list-create-group{width:100%!important;max-width:100%;margin-top:10px!important}
+    }
+    @media(max-width:390px){
+      .wedding-side-count{min-width:32px;padding:0 7px}
+      .wedding-list-toggle{font-size:11px}
+      .wedding-person-row{padding-left:30px}
+      .wedding-person-number{left:9px}
+      .wedding-send-cell{grid-template-columns:minmax(0,1fr)}
+      .wedding-send-check,.wedding-send-date{grid-column:1}
+    }
+  `;
+
   function normalizeWeddingName(value) {
     return String(value || '').trim().toLocaleLowerCase('es-CL');
   }
@@ -1637,7 +1801,11 @@
 
   function makeWeddingSendCell(row, stage, label) {
     const cell = document.createElement('div');
-    cell.className = 'wedding-send-cell';
+    cell.className = 'wedding-send-cell is-stage-' + stage;
+    const stageHeading = document.createElement('strong');
+    stageHeading.className = 'wedding-send-stage-label';
+    stageHeading.textContent = stage + ' · ' + label;
+    stageHeading.setAttribute('aria-hidden', 'true');
 
     const checkLabel = document.createElement('label');
     checkLabel.className = 'wedding-send-check';
@@ -1662,7 +1830,7 @@
       updateWeddingSendDate(row, stage, this.value, this);
     });
 
-    cell.append(checkLabel, dateInput);
+    cell.append(stageHeading, checkLabel, dateInput);
     return cell;
   }
 
@@ -1703,6 +1871,7 @@
       number.textContent = String(index + 1);
 
       const nameBox = document.createElement('div');
+      nameBox.className = 'wedding-person-identity';
       const name = document.createElement('span');
       name.className = 'wedding-person-name';
       name.textContent = row.nombre || 'Sin nombre';
@@ -1739,6 +1908,7 @@
         attendance.appendChild(option);
       });
       attendance.value = state;
+      attendance.setAttribute('aria-label', 'Asistencia de ' + (row.nombre || 'invitado'));
       attendance.addEventListener('change', function () {
         updateWeddingAttendance(row, this.value, this);
       });
