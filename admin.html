@@ -103,9 +103,9 @@
         </div>
 
         <div class="invite-owner-selection">
-          <label for="createInviteHours">Plazo de respuesta de esta invitación (horas)</label>
-          <input id="createInviteHours" type="number" min="1" max="8760" step="1" value="168" inputmode="numeric" />
-          <p class="form-help">168 horas = 7 días. El plazo comenzará solamente cuando lo autorices al compartir o copiar el enlace.</p>
+          <label for="createInviteDeadline">Fecha y hora límite para confirmar asistencia</label>
+          <input id="createInviteDeadline" type="datetime-local" step="60" required aria-describedby="createDeadlineHelp" />
+          <p class="form-help" id="createDeadlineHelp">Horario de Chile continental (America/Santiago). La cuenta regresiva terminará exactamente en la fecha y hora elegidas, incluso si compartes el enlace después.</p>
         </div>
 
         <div class="mode-grid">
@@ -302,13 +302,14 @@
     });
     document.getElementById("openCoverTitle").addEventListener("input", function(){ this.dataset.edited = "1"; });
 
-    function readInviteHours() {
-      const hours = Number(document.getElementById("createInviteHours").value);
-      if (!Number.isInteger(hours) || hours < 1 || hours > 8760) {
-        inviteCreateStatus.textContent = "Indica un plazo entre 1 y 8760 horas.";
+    function readInviteDeadline() {
+      const value = document.getElementById("createInviteDeadline").value;
+      const iso = window.chileDeadlineToIso?.(value);
+      if (!iso || Date.parse(iso) <= Date.now() + 60000) {
+        inviteCreateStatus.textContent = "Elige una fecha y hora futura válida en horario de Chile.";
         return null;
       }
-      return hours;
+      return iso;
     }
 
     function showGenerated(invite) {
@@ -323,9 +324,9 @@
       const lado = document.getElementById("inviteSideSelect").value;
       if (!lado) { inviteCreateStatus.textContent = "Selecciona si la invitación es del novio o de la novia."; return; }
       if (!title || !names.length) { inviteCreateStatus.textContent = "Completa el texto de portada y agrega al menos una persona."; return; }
-      const plazo_horas = readInviteHours(); if (plazo_horas === null) return;
+      const plazo_fecha_limite_at = readInviteDeadline(); if (!plazo_fecha_limite_at) return;
       inviteCreateStatus.textContent = "Creando invitación...";
-      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"lista_cerrada",titulo_portada:title,invitados:names,familia:null,lado,plazo_horas}]).select("*").single();
+      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"lista_cerrada",titulo_portada:title,invitados:names,familia:null,lado,plazo_fecha_limite_at}]).select("*").single();
       if (result.error) { console.error(result.error); inviteCreateStatus.textContent = "No se pudo crear el link."; return; }
       document.getElementById("closedCoverTitle").value = ""; document.getElementById("closedNames").value = "";
       inviteCreateStatus.textContent = "Invitación creada correctamente."; showGenerated(result.data); await loadAdminData();
@@ -337,9 +338,9 @@
       const lado = document.getElementById("inviteSideSelect").value;
       if (!lado) { inviteCreateStatus.textContent = "Selecciona si la invitación es del novio o de la novia."; return; }
       if (!family || !title) { inviteCreateStatus.textContent = "Completa el nombre de la familia y el texto de portada."; return; }
-      const plazo_horas = readInviteHours(); if (plazo_horas === null) return;
+      const plazo_fecha_limite_at = readInviteDeadline(); if (!plazo_fecha_limite_at) return;
       inviteCreateStatus.textContent = "Creando invitación...";
-      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"familia_libre",titulo_portada:title,familia:family,invitados:[],lado,plazo_horas}]).select("*").single();
+      const result = await client.from("invitaciones_personalizadas").insert([{tipo:"familia_libre",titulo_portada:title,familia:family,invitados:[],lado,plazo_fecha_limite_at}]).select("*").single();
       if (result.error) { console.error(result.error); inviteCreateStatus.textContent = "No se pudo crear el link."; return; }
       document.getElementById("openFamilyName").value = ""; document.getElementById("openCoverTitle").value = ""; delete document.getElementById("openCoverTitle").dataset.edited;
       inviteCreateStatus.textContent = "Invitación familiar creada correctamente."; showGenerated(result.data); await loadAdminData();
