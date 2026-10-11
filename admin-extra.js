@@ -1151,7 +1151,7 @@
             <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
             <button class="green-button" type="button" id="addGroomNamesBtn">Agregar a lista del novio</button>
             <button class="green-button wedding-list-create-group" type="button" id="createGroomFromListBtn">Crear invitación desde la lista del novio</button>
-            <p class="form-help">Selecciona una o varias personas para crear una invitación conjunta. Cada persona conservará su WhatsApp para compartirla de manera individual.</p>
+            <p class="form-help">Selecciona una o varias personas. Si eliges varias, compartirán el mismo link y una confirmación conjunta; conviene enviarlo a un responsable del grupo. Cada WhatsApp seguirá asociado a su persona.</p>
             <p class="status" id="groomListStatus"></p>
             <div class="wedding-list-scroll"><div class="wedding-list-items" id="groomListItems"></div></div>
           </div>
@@ -1174,7 +1174,7 @@
             <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
             <button class="green-button" type="button" id="addBrideNamesBtn">Agregar a lista de la novia</button>
             <button class="green-button wedding-list-create-group" type="button" id="createBrideFromListBtn">Crear invitación desde la lista de la novia</button>
-            <p class="form-help">Selecciona una o varias personas para crear una invitación conjunta. Cada persona conservará su WhatsApp para compartirla de manera individual.</p>
+            <p class="form-help">Selecciona una o varias personas. Si eliges varias, compartirán el mismo link y una confirmación conjunta; conviene enviarlo a un responsable del grupo. Cada WhatsApp seguirá asociado a su persona.</p>
             <p class="status" id="brideListStatus"></p>
             <div class="wedding-list-scroll"><div class="wedding-list-items" id="brideListItems"></div></div>
           </div>
@@ -1277,7 +1277,7 @@
       return;
     }
     const modal = weddingDialog('Crear invitación desde la lista ' + (side === 'novio' ? 'del novio' : 'de la novia'),
-      'Selecciona las personas que compartirán una misma invitación. El link se vinculará a cada una y sus números de WhatsApp permanecerán individuales.');
+      'Las personas seleccionadas compartirán un mismo link y una única confirmación para el grupo. Se conservará el WhatsApp de cada persona.');
     const picker = document.createElement('div');
     picker.className = 'wedding-pick-list';
     const choices = [];
@@ -1352,7 +1352,7 @@
       await loadAdminData();
       alert('Invitación creada y vinculada para ' + people.length +
         (people.length === 1 ? ' persona. ' : ' personas. ') +
-        'Puedes compartir su link por WhatsApp desde cada fila de la lista.');
+        'El mismo link quedará disponible en sus filas; para grupos es recomendable enviarlo a quien confirmará por todos.');
     };
     picker.scrollTop = 0;
   }
