@@ -484,6 +484,7 @@
     .wedding-person-name{display:block!important;min-width:0!important;width:auto!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important;word-break:normal!important;font-weight:650}
     .wedding-person-phone{display:block;color:var(--admin-muted);font-size:12px;margin-top:3px;overflow-wrap:anywhere}
     .wedding-person-phone.is-saved{color:var(--admin-olive);font-weight:650}
+    .wedding-phone-edit-link{display:block!important;width:max-content!important;margin:3px 0 5px!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;color:var(--admin-gold-dark)!important;text-decoration:underline;text-underline-offset:2px;font-size:12px!important;cursor:pointer}
     .wedding-edit-overlay{position:fixed;inset:0;z-index:9999;background:rgba(32,29,25,.56);display:grid;place-items:center;padding:16px}
     .wedding-edit-dialog{width:min(100%,470px);max-height:calc(100dvh - 32px);overflow-y:auto;box-sizing:border-box;background:#fffaf4;border:1px solid rgba(143,105,40,.2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:24px}
     .wedding-edit-dialog h3{margin:0 0 8px;color:var(--admin-gold-dark);font-size:21px}
@@ -1718,7 +1719,12 @@
       const phoneBadge = document.createElement('span');
       phoneBadge.className = 'wedding-person-phone' + (row.whatsapp ? ' is-saved' : '');
       phoneBadge.textContent = row.whatsapp ? 'WhatsApp: +' + row.whatsapp : 'WhatsApp sin registrar';
-      nameBox.append(name, phoneBadge, linkState, next);
+      const phoneEdit = document.createElement('button');
+      phoneEdit.className = 'wedding-phone-edit-link';
+      phoneEdit.type = 'button';
+      phoneEdit.textContent = row.whatsapp ? 'Editar WhatsApp' : '+ Añadir WhatsApp';
+      phoneEdit.addEventListener('click', () => editWeddingGuest(row));
+      nameBox.append(name, phoneBadge, phoneEdit, linkState, next);
 
       const attendance = document.createElement('select');
       attendance.className = 'wedding-attendance-select';
