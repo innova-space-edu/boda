@@ -921,7 +921,7 @@
     card.appendChild(panel);
   }
 
-  async function askStartDeadline(invite, method) {
+  async function askStartDeadline(invite, method, reservedPopup = null) {
     if (!invite || !invite.activa) {
       alert('No es posible compartir: la invitación no está disponible.');
       return false;
@@ -935,7 +935,7 @@
       alert('La fecha límite ya terminó. No es posible compartir esta invitación con plazo vencido.');
       return null;
     }
-    if (invite.plazo_inicio_at) return { allowed: true, popup: null };
+    if (invite.plazo_inicio_at) return { allowed: true, popup: reservedPopup };
     return new Promise(resolve => {
       const shade = document.createElement('div');
       shade.className = 'deadline-modal-shade';
@@ -958,9 +958,14 @@
       const start = button('Sí, iniciar ahora', true);
       const without = button('Compartir sin iniciar', false);
       const cancel = button('Cancelar', false);
-      function close(value) { shade.remove(); resolve(value); }
+      function close(value) {
+        if (!value && reservedPopup && !reservedPopup.closed) reservedPopup.close();
+        shade.remove();
+        resolve(value);
+      }
       function reserveWhatsAppTab() {
         if (method !== 'whatsapp') return null;
+        if (reservedPopup && !reservedPopup.closed) return reservedPopup;
         const popup = window.open('', '_blank');
         if (popup) popup.opener = null;
         return popup;
@@ -997,20 +1002,28 @@
   async function shareInvitation(method, url, title, row, clickedButton) {
     if (!url) return;
     const invite = findInviteByUrl(url);
-    const permission = await askStartDeadline(invite, method);
-    if (!permission?.allowed) return;
+    const whatsappDraft = method === 'whatsapp' && row
+      ? await composeWeddingWhatsApp(row, url, title) : null;
+    if (method === 'whatsapp' && row && !whatsappDraft) return;
+    const permission = await askStartDeadline(invite, method, whatsappDraft?.popup || null);
+    if (!permission?.allowed) {
+      if (whatsappDraft?.popup && !whatsappDraft.popup.closed) whatsappDraft.popup.close();
+      return;
+    }
     if (method === 'copy') { await copyText(url, clickedButton); return; }
-    const message = buildShareMessage(title, url);
+    const message = whatsappDraft?.message || buildShareMessage(title, url);
     const nextStage = row ? shareStageInfo(row) : null;
 
     if (method === 'whatsapp') {
-      if (row && nextStage) armShareConfirmation(row, nextStage.stage);
-      const destination = 'https://wa.me/?text=' + encodeURIComponent(message);
+      const phonePath = whatsappDraft?.phone || '';
+      const destination = 'https://wa.me/' + phonePath + '?text=' + encodeURIComponent(message);
       const opened = permission.popup || window.open(destination, '_blank', 'noopener,noreferrer');
       if (permission.popup) permission.popup.location.replace(destination);
       if (!opened) {
-        await copyText(url);
-        alert('Tu navegador bloqueó la ventana de WhatsApp. Copiamos el enlace para que puedas compartirlo manualmente.');
+        await copyText(message);
+        alert('El navegador bloqueó WhatsApp. Se copió el mensaje con el enlace para enviarlo manualmente.');
+      } else if (row && nextStage) {
+        armShareConfirmation(row, nextStage.stage);
       }
       return;
     }
@@ -1338,26 +1351,25 @@
     renderInvites();
   }
 
-  async function editWeddingName(row) {
+  async function editWeddingName(row, name, whatsapp) {
     const oldName = row.nombre || '';
-    const value = prompt('Editar nombre:', oldName);
-    if (value === null) return;
-    const name = value.trim();
-    if (!name || name === oldName) return;
+    const oldPhone = row.whatsapp || '';
+    if (!name || whatsapp === null) return false;
+    if (name === oldName && whatsapp === oldPhone) return true;
 
-    const result = await client
-      .from('lista_novios')
-      .update({ nombre: name, updated_at: new Date().toISOString() })
-      .eq('id', row.id);
-
-    if (result.error) {
-      console.error(result.error);
-      alert('No se pudo editar el nombre.');
-      return;
+    const result = await client.from('lista_novios')
+      .update({ nombre: name, whatsapp: whatsapp || null, updated_at: new Date().toISOString() })
+      .eq('id', row.id).select('id');
+    if (result.error || result.data?.length !== 1) {
+      console.error('No se pudo editar al invitado', result.error);
+      return false;
     }
+    row.nombre = name;
+    row.whatsapp = whatsapp || null;
 
+    // Si cambia el nombre, conservar sincronizada la invitación ya vinculada.
     const invite = weddingInviteFor(row);
-    if (invite) {
+    if (invite && name !== oldName) {
       const oldKey = normalizeWeddingName(oldName);
       let replaced = false;
       const names = (invite.invitados || []).map(invitedName => {
@@ -1367,19 +1379,19 @@
         }
         return invitedName;
       });
-
       const patch = { updated_at: new Date().toISOString() };
       if (replaced) patch.invitados = names;
       if (normalizeWeddingName(invite.familia) === oldKey) patch.familia = name;
-      if ((replaced && names.length === 1) || normalizeWeddingName(invite.titulo_portada) === normalizeWeddingName('Invitación para ' + oldName)) {
+      if ((replaced && names.length === 1) ||
+        normalizeWeddingName(invite.titulo_portada) === normalizeWeddingName('Invitación para ' + oldName)) {
         patch.titulo_portada = 'Invitación para ' + name;
       }
-
       if (Object.keys(patch).length > 1) {
-        const inviteUpdate = await client.from('invitaciones_personalizadas').update(patch).eq('id', invite.id);
-        if (inviteUpdate.error) {
-          console.error(inviteUpdate.error);
-          alert('El nombre se actualizó en la lista, pero no se pudo sincronizar el link.');
+        const updated = await client.from('invitaciones_personalizadas')
+          .update(patch).eq('id', invite.id);
+        if (updated.error) {
+          console.error(updated.error);
+          alert('El invitado se guardó, pero no fue posible sincronizar el nombre de la invitación. Revísala antes de compartir.');
         } else {
           if (patch.invitados) invite.invitados = patch.invitados;
           if (patch.familia) invite.familia = patch.familia;
@@ -1387,10 +1399,9 @@
         }
       }
     }
-
-    row.nombre = name;
     renderWeddingLists();
     renderInvites();
+    return true;
   }
 
   async function deleteWeddingName(row) {
@@ -1570,7 +1581,7 @@
 
     const head = document.createElement('div');
     head.className = 'wedding-list-table-head';
-    ['N°', 'Nombre / link / próximo envío', 'Asistirá', '1 · Invitación', '2 · Recordatorio', '3 · Itinerario', 'Link y acciones'].forEach(text => {
+    ['N°', 'Nombre / WhatsApp / link / próximo envío', 'Asistirá', '1 · Invitación', '2 · Recordatorio', '3 · Itinerario', 'Link y acciones'].forEach(text => {
       const cell = document.createElement('span');
       cell.textContent = text;
       head.appendChild(cell);
@@ -1600,7 +1611,10 @@
       const next = document.createElement('span');
       next.className = 'wedding-next-send';
       next.textContent = nextWeddingSend(row);
-      nameBox.append(name, linkState, next);
+      const phoneBadge = document.createElement('span');
+      phoneBadge.className = 'wedding-person-phone' + (row.whatsapp ? ' is-saved' : '');
+      phoneBadge.textContent = row.whatsapp ? 'WhatsApp: +' + row.whatsapp : 'WhatsApp sin registrar';
+      nameBox.append(name, phoneBadge, linkState, next);
 
       const attendance = document.createElement('select');
       attendance.className = 'wedding-attendance-select';
@@ -1679,8 +1693,8 @@
       const edit = document.createElement('button');
       edit.className = 'mini-button compact-button';
       edit.type = 'button';
-      edit.textContent = 'Editar';
-      edit.addEventListener('click', () => editWeddingName(row));
+      edit.textContent = 'Editar datos';
+      edit.addEventListener('click', () => editWeddingGuest(row));
       actions.appendChild(edit);
 
       if (state === 'no') {
