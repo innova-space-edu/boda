@@ -702,7 +702,11 @@
 
     if (method === 'whatsapp') {
       if (row && nextStage) armShareConfirmation(row, nextStage.stage);
-      window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
+      const opened = window.open('https://wa.me/?text=' + encodeURIComponent(message), '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        await copyText(url);
+        alert('Tu navegador bloqueó la ventana de WhatsApp. Copiamos el enlace para que puedas compartirlo manualmente.');
+      }
       return;
     }
 
@@ -722,7 +726,11 @@
           });
           if (row && nextStage) showShareConfirmation(row, nextStage.stage);
         } catch (error) {
-          if (error?.name !== 'AbortError') console.error(error);
+          if (error?.name !== 'AbortError') {
+            console.error(error);
+            await copyText(url);
+            alert('No fue posible abrir el menú de compartir. El enlace quedó copiado.');
+          }
         }
         return;
       }
