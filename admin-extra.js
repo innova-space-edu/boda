@@ -494,6 +494,13 @@
     .wedding-edit-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:17px}
     .wedding-edit-actions button{width:auto!important;margin:0!important;padding:10px 15px!important}
     .wedding-edit-status{margin-top:10px!important;color:#975043!important}
+    .wedding-pick-list{max-height:240px;overflow:auto;border:1px solid rgba(143,105,40,.2);border-radius:12px;background:#fff;margin:8px 0;padding:5px 8px}
+    .wedding-pick-row{display:flex!important;flex-direction:row!important;align-items:center!important;gap:9px;margin:0!important;padding:9px 6px;border-bottom:1px solid #f1ece3;cursor:pointer;color:var(--admin-text)!important}
+    .wedding-pick-row:last-child{border-bottom:0}
+    .wedding-pick-row input{width:17px!important;height:17px!important;flex:0 0 17px;accent-color:var(--admin-olive)}
+    .wedding-pick-row span{font-size:13px}
+    .wedding-list-create-group{display:inline-block!important;width:auto!important;margin:10px 0 0!important;background:var(--admin-gold-dark)!important}
+    .wedding-edit-dialog .wedding-field-row{margin:8px 0}
     @media(max-width:540px){.wedding-edit-dialog{padding:17px}.wedding-edit-actions button{flex:1 1 120px}}
     .wedding-link-state{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin-top:5px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.02em;background:#eee9df;color:#746650}
     .wedding-link-state.is-ready{background:#f7ecd2;color:#836319}
@@ -1142,6 +1149,8 @@
             <textarea id="groomNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Juan Pérez&#10;María Soto"></textarea>
             <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
             <button class="green-button" type="button" id="addGroomNamesBtn">Agregar a lista del novio</button>
+            <button class="green-button wedding-list-create-group" type="button" id="createGroomFromListBtn">Crear invitación desde la lista del novio</button>
+            <p class="form-help">Selecciona una o varias personas para crear una invitación conjunta. Cada persona conservará su WhatsApp para compartirla de manera individual.</p>
             <p class="status" id="groomListStatus"></p>
             <div class="wedding-list-scroll"><div class="wedding-list-items" id="groomListItems"></div></div>
           </div>
@@ -1163,6 +1172,8 @@
             <textarea id="brideNamesInput" rows="4" placeholder="Un nombre por línea&#10;Ej.: Ana González&#10;Pedro Muñoz"></textarea>
             <p class="form-help">Puedes pegar varios nombres a la vez. Después podrás editar cada nombre y crear o vincular su link.</p>
             <button class="green-button" type="button" id="addBrideNamesBtn">Agregar a lista de la novia</button>
+            <button class="green-button wedding-list-create-group" type="button" id="createBrideFromListBtn">Crear invitación desde la lista de la novia</button>
+            <p class="form-help">Selecciona una o varias personas para crear una invitación conjunta. Cada persona conservará su WhatsApp para compartirla de manera individual.</p>
             <p class="status" id="brideListStatus"></p>
             <div class="wedding-list-scroll"><div class="wedding-list-items" id="brideListItems"></div></div>
           </div>
@@ -1199,6 +1210,8 @@
     document.getElementById('addBrideNamesBtn').addEventListener('click', function () {
       addWeddingNames('novia');
     });
+    document.getElementById('createGroomFromListBtn').addEventListener('click', () => createInvitationFromList('novio'));
+    document.getElementById('createBrideFromListBtn').addEventListener('click', () => createInvitationFromList('novia'));
   }
 
   function sideElements(side) {
@@ -1250,6 +1263,97 @@
     els.input.value = '';
     els.status.textContent = names.length === 1 ? 'Invitado agregado.' : names.length + ' invitados agregados.';
     await loadWeddingLists();
+  }
+
+
+  function createInvitationFromList(side) {
+    if (!['novio', 'novia'].includes(side)) return;
+    const candidates = weddingListRows
+      .filter(row => row.lado === side && !row.invitacion_id)
+      .sort((a,b) => String(a.nombre).localeCompare(String(b.nombre), 'es-CL'));
+    if (!candidates.length) {
+      alert('No hay personas sin invitación en esta lista. Primero agrega invitados o revisa sus links existentes.');
+      return;
+    }
+    const modal = weddingDialog('Crear invitación desde la lista ' + (side === 'novio' ? 'del novio' : 'de la novia'),
+      'Selecciona las personas que compartirán una misma invitación. El link se vinculará a cada una y sus números de WhatsApp permanecerán individuales.');
+    const picker = document.createElement('div');
+    picker.className = 'wedding-pick-list';
+    const choices = [];
+    for (const person of candidates) {
+      const label = document.createElement('label');
+      label.className = 'wedding-pick-row';
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.value = person.id;
+      const name = document.createElement('span');
+      name.textContent = person.nombre + (person.whatsapp ? ' · +' + person.whatsapp : ' · sin WhatsApp');
+      label.append(check, name);
+      picker.appendChild(label);
+      choices.push({ person, check });
+    }
+    const count = document.createElement('p');
+    count.textContent = '0 seleccionados';
+    const title = weddingField('Texto de portada', 'text', '', 'Invitación para...');
+    const date = weddingField('Fecha y hora límite (Chile)', 'datetime-local',
+      chileDeadlineInputFromIso(new Date(Date.now() + 7 * 86400000).toISOString()));
+    date.field.step = '60';
+    const selectAll = document.createElement('button');
+    selectAll.type = 'button'; selectAll.className = 'mini-button compact-button';
+    selectAll.textContent = 'Seleccionar todos los disponibles';
+    function selected() { return choices.filter(item => item.check.checked).map(item => item.person); }
+    function refreshCount() {
+      const people = selected();
+      count.textContent = people.length + (people.length === 1 ? ' seleccionado' : ' seleccionados');
+      if (!title.field.dataset.edited) {
+        title.field.value = people.length > 3
+          ? 'Invitación para ' + people[0].nombre + ' y ' + (people.length - 1) + ' invitados más'
+          : people.length ? 'Invitación para ' + formatNames(people.map(p => p.nombre)) : '';
+      }
+    }
+    choices.forEach(x => x.check.addEventListener('change', refreshCount));
+    title.field.addEventListener('input', () => { title.field.dataset.edited = '1'; });
+    selectAll.onclick = () => {
+      const allChecked = choices.every(c => c.check.checked);
+      choices.forEach(x => { x.check.checked = !allChecked; });
+      selectAll.textContent = allChecked ? 'Seleccionar todos los disponibles' : 'Quitar selección';
+      refreshCount();
+    };
+    modal.body.append(selectAll, picker, count, title.wrapper, date.wrapper);
+    modal.submit.textContent = 'Crear invitación y vincular';
+    modal.cancel.onclick = () => modal.overlay.remove();
+    modal.submit.onclick = async () => {
+      const people = selected();
+      if (!people.length || people.length > 100) {
+        modal.status.textContent = 'Selecciona entre 1 y 100 personas.'; return;
+      }
+      const inviteTitle = title.field.value.trim();
+      if (inviteTitle.length < 3) {
+        modal.status.textContent = 'Escribe un título para la invitación.'; return;
+      }
+      const deadline = chileDeadlineToIso(date.field.value);
+      if (!deadline || Date.parse(deadline) <= Date.now() + 60000) {
+        modal.status.textContent = 'La fecha límite debe ser futura y válida en horario de Chile.'; return;
+      }
+      modal.cancel.disabled = true; modal.submit.disabled = true;
+      modal.status.textContent = 'Creando invitación y vinculando nombres...';
+      const result = await client.rpc('crear_invitacion_desde_lista', {
+        p_lado: side, p_ids: people.map(x => x.id),
+        p_titulo: inviteTitle, p_fecha_limite: deadline
+      });
+      if (result.error || !result.data) {
+        console.error('No se pudo crear la invitación desde lista', result.error);
+        modal.status.textContent = 'No se pudo crear. Revisa si alguno ya tiene un link vinculado.';
+        modal.cancel.disabled = false; modal.submit.disabled = false;
+        return;
+      }
+      modal.overlay.remove();
+      await loadAdminData();
+      alert('Invitación creada y vinculada para ' + people.length +
+        (people.length === 1 ? ' persona. ' : ' personas. ') +
+        'Puedes compartir su link por WhatsApp desde cada fila de la lista.');
+    };
+    picker.scrollTop = 0;
   }
 
   async function createWeddingInvite(row) {
@@ -1737,6 +1841,10 @@
     setText('brideInlineCount', brideRows.length);
     setText('groomListSummary', summary(groomRows));
     setText('brideListSummary', summary(brideRows));
+    const availableGroom = groomRows.filter(row => !row.invitacion_id).length;
+    const availableBride = brideRows.filter(row => !row.invitacion_id).length;
+    document.getElementById('createGroomFromListBtn').disabled = availableGroom === 0;
+    document.getElementById('createBrideFromListBtn').disabled = availableBride === 0;
 
     renderWeddingSide('novio', 'groomListItems');
     renderWeddingSide('novia', 'brideListItems');
