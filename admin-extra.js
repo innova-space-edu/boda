@@ -651,7 +651,7 @@
       panel.append(heading, info);
     } else {
       info.textContent = limit
-        ? (Date.parse(limit) <= Date.now() ? 'Fecha vencida. Debes establecer otra. ' : 'Pendiente de iniciar. ') +
+        ? (Date.parse(limit) <= Date.now() ? 'Fecha vencida. Debes establecer otra. ' : 'Inicio de envío sin registrar. ') +
           'Fecha límite: ' + formatDeadlineCL(limit) + '.'
         : 'Sin fecha límite. Establécela antes de compartir la invitación.';
       panel.append(heading, info);
@@ -701,7 +701,7 @@
       title.textContent = '¿Iniciar plazo de confirmación?';
       const info = document.createElement('p');
       info.textContent = 'La confirmación termina el ' + formatDeadlineCL(limit) +
-        ' (hora de Chile). Si inicias ahora, el tiempo restante se calculará hasta esa fecha exacta. Compartir de nuevo no reinicia el conteo.';
+        ' (hora de Chile). Puedes registrar ahora el inicio del envío o compartir sin registrarlo. La fecha límite y la cuenta regresiva no cambian en ninguno de los dos casos.';
       const actions = document.createElement('div');
       actions.className = 'deadline-modal-buttons';
       function button(text, green) {
