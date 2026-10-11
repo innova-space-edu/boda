@@ -133,3 +133,70 @@ body.admin-body .hidden{display:none!important}
   .unassigned-invite-row{align-items:stretch;flex-direction:column}
   .unassigned-invite-actions{flex-shrink:1}
 }
+
+
+/* Fecha límite masiva, independiente para el novio y la novia. */
+.bulk-deadline-panel{
+  margin:0 0 20px;
+  padding:20px;
+  border:1px solid rgba(143,105,40,.22);
+  border-radius:18px;
+  background:var(--admin-surface);
+  box-shadow:var(--admin-shadow);
+}
+.bulk-deadline-heading{
+  display:flex;
+  gap:16px;
+  justify-content:space-between;
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+.bulk-deadline-heading h3{
+  margin:0 0 7px;
+  font-size:19px;
+  color:var(--admin-gold-dark);
+}
+.bulk-deadline-heading p{
+  max-width:680px;
+  margin:0 0 13px;
+  color:var(--admin-muted);
+  font-size:13px;
+  line-height:1.5;
+}
+.bulk-deadline-count{
+  display:inline-block;
+  flex-shrink:0;
+  padding:7px 12px;
+  border-radius:999px;
+  background:#edf1e8;
+  color:#506245;
+  font-size:12px;
+  font-weight:800;
+}
+.bulk-deadline-controls{
+  display:flex;
+  align-items:flex-end;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.bulk-deadline-field{flex:1 1 260px;min-width:0}
+.bulk-deadline-field label{display:block;margin-bottom:8px;font-size:13px;font-weight:700;color:var(--admin-gold-dark)}
+.bulk-deadline-field input{width:100%;max-width:420px;height:43px}
+.bulk-deadline-controls .green-button{
+  margin:0;
+  width:auto!important;
+  min-height:43px;
+  padding:9px 18px;
+}
+.bulk-deadline-controls .green-button:disabled{opacity:.5;cursor:not-allowed}
+.bulk-deadline-panel .form-help{margin:12px 0 0;font-size:12px;line-height:1.5}
+.bulk-deadline-status{margin:9px 0 0;min-height:0;font-size:13px;text-align:left}
+.bulk-deadline-status:empty{display:none}
+@media(max-width:640px){
+  .bulk-deadline-panel{padding:16px}
+  .bulk-deadline-controls{align-items:stretch}
+  .bulk-deadline-field{flex-basis:100%}
+  .bulk-deadline-controls .green-button{width:100%!important}
+  .bulk-deadline-heading h3{font-size:17px}
+}
