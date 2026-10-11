@@ -52,6 +52,19 @@
         <label for="mensaje">Mensaje para los novios</label>
         <textarea id="mensaje" name="mensaje"></textarea>
 
+
+        <div id="rsvpDeadlineBox" class="rsvp-deadline-box hidden" aria-live="off">
+          <strong id="rsvpDeadlineHeading">Tiempo para responder</strong>
+          <p id="rsvpDeadlineDate" class="rsvp-deadline-date"></p>
+          <div id="rsvpDeadlineClock" class="rsvp-deadline-clock hidden" role="timer" aria-label="Tiempo restante para confirmar">
+            <div><b id="rsvpDays">00</b><small>Días</small></div>
+            <div><b id="rsvpHours">00</b><small>Horas</small></div>
+            <div><b id="rsvpMinutes">00</b><small>Minutos</small></div>
+            <div><b id="rsvpSeconds">00</b><small>Segundos</small></div>
+          </div>
+          <p id="rsvpDeadlineExpired" class="rsvp-deadline-expired hidden">El plazo para responder a esta invitación ha finalizado. Gracias por tu comprensión.</p>
+        </div>
+
         <p class="rsvp-capacity-note" role="note">
           Tu respuesta nos ayudará a organizar este día tan especial. Si no recibimos tu confirmación, entenderemos que no podrás acompañarnos y podremos ofrecer tu lugar a otra persona. Por este motivo, no realizaremos una nueva solicitud de confirmación.
         </p>
@@ -75,6 +88,13 @@
     let personalizedInvite = null;
     let openMemberCount = 0;
     let generalMemberCount = 0;
+    let rsvpDeadlinePromise = null;
+    let rsvpDeadlineAt = null;
+    let rsvpClockOffset = 0;
+    let rsvpDeadlineExpired = false;
+    let rsvpClockInterval = null;
+
+    window.isRsvpDeadlineExpired = () => rsvpDeadlineExpired;
 
     const closedInviteFields = document.getElementById("closedInviteFields");
     const openFamilyFields = document.getElementById("openFamilyFields");
@@ -180,6 +200,95 @@
       return { names, contacts };
     }
 
+
+    function formatRsvpDeadline(value) {
+      return new Intl.DateTimeFormat("es-CL", {
+        timeZone: "America/Santiago", dateStyle: "full", timeStyle: "short"
+      }).format(new Date(value));
+    }
+
+    function blockExpiredRsvp() {
+      if (rsvpDeadlineExpired) return;
+      rsvpDeadlineExpired = true;
+      document.getElementById("rsvpDeadlineHeading").textContent = "Plazo finalizado";
+      document.getElementById("rsvpDeadlineClock").classList.add("hidden");
+      document.getElementById("rsvpDeadlineExpired").classList.remove("hidden");
+      form.querySelectorAll("input, select, textarea, button").forEach(control => control.disabled = true);
+      submitRsvpBtn.disabled = true;
+      statusText.textContent = "El plazo de confirmación ya terminó. No es posible registrar una respuesta.";
+      clearInterval(rsvpClockInterval);
+    }
+
+    function updateRsvpClock() {
+      if (!rsvpDeadlineAt || rsvpDeadlineExpired) return;
+      const totalSeconds = Math.max(0, Math.ceil((rsvpDeadlineAt - (Date.now() + rsvpClockOffset)) / 1000));
+      if (totalSeconds === 0) { blockExpiredRsvp(); return; }
+      const parts = [
+        Math.floor(totalSeconds / 86400),
+        Math.floor((totalSeconds % 86400) / 3600),
+        Math.floor((totalSeconds % 3600) / 60),
+        totalSeconds % 60
+      ];
+      ["rsvpDays", "rsvpHours", "rsvpMinutes", "rsvpSeconds"].forEach((id, index) => {
+        document.getElementById(id).textContent = String(parts[index]).padStart(2, "0");
+      });
+    }
+
+    window.loadRsvpDeadline = function () {
+      if (!inviteToken || !supabaseClient) return Promise.resolve();
+      if (rsvpDeadlinePromise) return rsvpDeadlinePromise;
+      rsvpDeadlinePromise = (async () => {
+        const result = await supabaseClient.rpc("obtener_plazo_invitacion", {p_token:inviteToken});
+        const record = result.data?.[0];
+        if (result.error || !record) {
+          console.error("No se pudo verificar el plazo", result.error);
+          submitRsvpBtn.disabled = true;
+          statusText.textContent = "No se pudo verificar la fecha límite. Inténtalo nuevamente.";
+          return;
+        }
+        const box = document.getElementById("rsvpDeadlineBox");
+        box.classList.remove("hidden");
+        if (!record.plazo_fin_at) {
+          document.getElementById("rsvpDeadlineHeading").textContent = "Plazo aún no iniciado";
+          document.getElementById("rsvpDeadlineDate").textContent =
+            "Puedes responder ahora. Cuando se active el plazo, aquí aparecerán la fecha límite y el tiempo restante.";
+          // Si el invitado ya tiene abierta la página, detectar el inicio sin recargar.
+          setTimeout(() => {
+            if (rsvpDeadlineAt || rsvpDeadlineExpired || document.hidden) {
+              if (document.hidden) document.addEventListener("visibilitychange", () => {
+                if (!document.hidden && !rsvpDeadlineAt) {
+                  rsvpDeadlinePromise = null;
+                  window.loadRsvpDeadline();
+                }
+              }, { once: true });
+              return;
+            }
+            rsvpDeadlinePromise = null;
+            window.loadRsvpDeadline();
+          }, 60000);
+          return;
+        }
+        rsvpDeadlineAt = Date.parse(record.plazo_fin_at);
+        rsvpClockOffset = Date.parse(record.servidor_ahora) - Date.now();
+        document.getElementById("rsvpDeadlineDate").textContent =
+          "Tienes hasta el " + formatRsvpDeadline(record.plazo_fin_at) + " para responder.";
+        document.getElementById("rsvpDeadlineClock").classList.remove("hidden");
+        updateRsvpClock();
+        if (!rsvpDeadlineExpired) rsvpClockInterval = setInterval(updateRsvpClock, 1000);
+      })();
+      return rsvpDeadlinePromise;
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) updateRsvpClock();
+    });
+    // Aplica a las tres modalidades, incluida persona + acompañante.
+    form.addEventListener("submit", event => {
+      if (!rsvpDeadlineExpired) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      statusText.textContent = "El plazo para confirmar esta invitación ya finalizó.";
+    }, true);
+
     async function loadInvite() {
       if (!supabaseClient) {
         statusText.textContent = "Falta configurar Supabase.";
@@ -219,11 +328,12 @@
       }
       statusText.textContent = "";
       submitRsvpBtn.disabled = false;
+      await window.loadRsvpDeadline();
     }
 
     form.addEventListener("submit", async function(event){
       event.preventDefault();
-      if (!supabaseClient) return;
+      if (!supabaseClient || rsvpDeadlineExpired) return;
       submitRsvpBtn.disabled = true;
       statusText.textContent = "Enviando confirmación...";
       const message = document.getElementById("mensaje").value.trim();
