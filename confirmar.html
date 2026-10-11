@@ -252,6 +252,20 @@
           document.getElementById("rsvpDeadlineHeading").textContent = "Plazo aún no iniciado";
           document.getElementById("rsvpDeadlineDate").textContent =
             "Puedes responder ahora. Cuando se active el plazo, aquí aparecerán la fecha límite y el tiempo restante.";
+          // Si el invitado ya tiene abierta la página, detectar el inicio sin recargar.
+          setTimeout(() => {
+            if (rsvpDeadlineAt || rsvpDeadlineExpired || document.hidden) {
+              if (document.hidden) document.addEventListener("visibilitychange", () => {
+                if (!document.hidden && !rsvpDeadlineAt) {
+                  rsvpDeadlinePromise = null;
+                  window.loadRsvpDeadline();
+                }
+              }, { once: true });
+              return;
+            }
+            rsvpDeadlinePromise = null;
+            window.loadRsvpDeadline();
+          }, 60000);
           return;
         }
         rsvpDeadlineAt = Date.parse(record.plazo_fin_at);
