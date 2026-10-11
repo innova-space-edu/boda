@@ -47,6 +47,8 @@
         <a class="hotspot ver-datos internal-page" href="datos.html" data-title="Ver datos bancarios" aria-label="Ver datos bancarios"></a>
       </div>
 
+      <p id="inviteDeadlineNotice" class="invite-deadline-notice hidden"></p>
+
       <a class="admin-link" href="admin.html">Administrador</a>
     </section>
   </main>
@@ -95,6 +97,21 @@
       sessionStorage.setItem("weddingInviteToken", activeInviteToken);
       personalInviteBadge.textContent = invitation.titulo_portada || ("Para " + formatInviteNames(invitation.invitados || []));
       personalInviteBadge.classList.remove("hidden");
+      // La invitación muestra la fecha exacta fijada para su confirmación.
+      const deadlineResult = await client.rpc("obtener_plazo_invitacion", { p_token: activeInviteToken });
+      const deadline = deadlineResult.data?.[0]?.plazo_fin_at;
+      const notice = document.getElementById("inviteDeadlineNotice");
+      if (!deadlineResult.error && deadline) {
+        const formatted = new Intl.DateTimeFormat("es-CL", {
+          timeZone: "America/Santiago", dateStyle: "full", timeStyle: "short"
+        }).format(new Date(deadline));
+        notice.textContent = new Date(deadline).getTime() <= Date.now()
+          ? "El plazo de confirmación finalizó el " + formatted + "."
+          : "Tienes hasta el " + formatted + " para confirmar tu asistencia.";
+        notice.classList.remove("hidden");
+      } else {
+        notice.classList.add("hidden");
+      }
 
       if (inviteTokenFromUrl) {
         await client.rpc("registrar_apertura_invitacion", { p_token: activeInviteToken });
