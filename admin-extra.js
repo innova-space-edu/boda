@@ -482,6 +482,19 @@
     .wedding-person-row.is-yes{background:#f2f5ed;border-color:rgba(111,122,88,.24)}
     .wedding-person-number{color:var(--admin-muted);font-size:12px;text-align:center}
     .wedding-person-name{display:block!important;min-width:0!important;width:auto!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;overflow-wrap:normal!important;word-break:normal!important;font-weight:650}
+    .wedding-person-phone{display:block;color:var(--admin-muted);font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+    .wedding-person-phone.is-saved{color:var(--admin-olive);font-weight:650}
+    .wedding-edit-overlay{position:fixed;inset:0;z-index:9999;background:rgba(32,29,25,.56);display:grid;place-items:center;padding:16px}
+    .wedding-edit-dialog{width:min(100%,470px);max-height:calc(100dvh - 32px);overflow-y:auto;box-sizing:border-box;background:#fffaf4;border:1px solid rgba(143,105,40,.2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:24px}
+    .wedding-edit-dialog h3{margin:0 0 8px;color:var(--admin-gold-dark);font-size:21px}
+    .wedding-edit-dialog p{font-size:13px;line-height:1.5;color:var(--admin-muted);margin:0 0 14px}
+    .wedding-edit-dialog label{display:block;margin:12px 0 5px;color:var(--admin-gold-dark);font-weight:700;font-size:13px}
+    .wedding-edit-dialog input,.wedding-edit-dialog textarea{width:100%;box-sizing:border-box}
+    .wedding-edit-dialog textarea{min-height:165px;resize:vertical;line-height:1.5}
+    .wedding-edit-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:17px}
+    .wedding-edit-actions button{width:auto!important;margin:0!important;padding:10px 15px!important}
+    .wedding-edit-status{margin-top:10px!important;color:#975043!important}
+    @media(max-width:540px){.wedding-edit-dialog{padding:17px}.wedding-edit-actions button{flex:1 1 120px}}
     .wedding-link-state{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin-top:5px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.02em;background:#eee9df;color:#746650}
     .wedding-link-state.is-ready{background:#f7ecd2;color:#836319}
     .wedding-link-state.is-sent{background:#e3eee0;color:#53694c}
@@ -530,6 +543,151 @@
       { stage: 3, field: 'envio_3_enviado', label: 'Itinerario' }
     ];
     return stages.find(item => !row[item.field]) || null;
+  }
+
+
+  function normalizeWeddingWhatsApp(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    // Aceptamos +56 9 1234 5678, 56912345678, 9 1234 5678,
+    // o un teléfono internacional completo con +.
+    if (!/^[+()\d\s.-]+$/.test(raw)) return null;
+    let digits = raw.replace(/[^\d]/g, '');
+    if (raw.startsWith('00')) digits = digits.slice(2);
+    if (!raw.startsWith('+') && !raw.startsWith('00') && /^9\d{8}$/.test(digits)) {
+      digits = '56' + digits;
+    }
+    if (!/^[1-9]\d{7,14}$/.test(digits)) return null;
+    return digits;
+  }
+
+  function weddingWhatsAppText(row, url, title) {
+    const stage = shareStageInfo(row)?.stage || 1;
+    const salutation = 'Hola ' + (row.nombre || '') + ',';
+    const intro = stage === 2
+      ? 'te compartimos un recordatorio para confirmar tu asistencia a nuestra boda.'
+      : stage === 3
+        ? 'te compartimos nuevamente los detalles e itinerario de nuestra boda.'
+        : 'queremos compartir contigo nuestra invitación de boda.';
+    return salutation + '\n\n' + intro + '\n\n' +
+      (title || 'Carolina & Esthefano') + '\n\n' + url;
+  }
+
+  function weddingDialog(titleText, explanation) {
+    const overlay = document.createElement('div');
+    overlay.className = 'wedding-edit-overlay';
+    const dialog = document.createElement('div');
+    dialog.className = 'wedding-edit-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', titleText);
+    const title = document.createElement('h3');
+    title.textContent = titleText;
+    const help = document.createElement('p');
+    help.textContent = explanation;
+    const body = document.createElement('div');
+    const status = document.createElement('p');
+    status.className = 'wedding-edit-status';
+    status.setAttribute('role', 'status');
+    const actions = document.createElement('div');
+    actions.className = 'wedding-edit-actions';
+    const cancel = document.createElement('button');
+    cancel.type = 'button'; cancel.className = 'mini-button compact-button';
+    cancel.textContent = 'Cancelar';
+    const submit = document.createElement('button');
+    submit.type = 'button'; submit.className = 'green-button';
+    dialog.append(title, help, body, status, actions);
+    actions.append(cancel, submit);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    return { overlay, dialog, body, status, cancel, submit };
+  }
+
+  function weddingField(labelText, type, value, placeholder) {
+    const wrapper = document.createElement('div');
+    const label = document.createElement('label');
+    const field = document.createElement(type === 'textarea' ? 'textarea' : 'input');
+    if (type !== 'textarea') field.type = type;
+    field.value = value || '';
+    if (placeholder) field.placeholder = placeholder;
+    const id = 'wedding-field-' + crypto.randomUUID();
+    field.id = id; label.htmlFor = id;
+    label.textContent = labelText;
+    wrapper.append(label, field);
+    return { wrapper, field };
+  }
+
+  function editWeddingGuest(row) {
+    const modal = weddingDialog('Editar invitado', 'Edita el nombre y el WhatsApp de esta persona. El número quedará guardado en la lista y se usará al compartir su invitación.');
+    const name = weddingField('Nombre', 'text', row.nombre, 'Nombre y apellido');
+    const phone = weddingField('WhatsApp (opcional)', 'tel', row.whatsapp ? '+' + row.whatsapp : '', '+56 9 1234 5678');
+    phone.field.autocomplete = 'tel';
+    modal.body.append(name.wrapper, phone.wrapper);
+    modal.submit.textContent = 'Guardar cambios';
+    function close() { modal.overlay.remove(); }
+    modal.cancel.onclick = close;
+    modal.submit.onclick = async () => {
+      const cleanedName = name.field.value.trim();
+      const cleanedPhone = normalizeWeddingWhatsApp(phone.field.value);
+      if (!cleanedName) { modal.status.textContent = 'Debes escribir el nombre del invitado.'; return; }
+      if (cleanedPhone === null) { modal.status.textContent = 'Escribe un número válido. Para Chile, por ejemplo: +56 9 1234 5678.'; return; }
+      modal.submit.disabled = true; modal.cancel.disabled = true;
+      modal.status.textContent = 'Guardando...';
+      const saved = await editWeddingName(row, cleanedName, cleanedPhone);
+      if (saved) close();
+      else {
+        modal.status.textContent = 'No fue posible guardar los cambios.';
+        modal.submit.disabled = false; modal.cancel.disabled = false;
+      }
+    };
+    name.field.focus();
+  }
+
+  function composeWeddingWhatsApp(row, url, title) {
+    return new Promise(resolve => {
+      const modal = weddingDialog('Preparar WhatsApp para ' + row.nombre,
+        'Revisa el destinatario y personaliza el mensaje. La invitación se incluirá siempre al final. WhatsApp se abrirá con el texto preparado; deberás pulsar Enviar allí.');
+      const phone = weddingField('Número del destinatario', 'tel',
+        row.whatsapp ? '+' + row.whatsapp : '', '+56 9 1234 5678');
+      const message = weddingField('Mensaje de WhatsApp', 'textarea',
+        weddingWhatsAppText(row, url, title));
+      phone.field.autocomplete = 'tel';
+      modal.body.append(phone.wrapper, message.wrapper);
+      modal.submit.textContent = 'Abrir WhatsApp';
+      function close(result) { modal.overlay.remove(); resolve(result); }
+      modal.cancel.onclick = () => close(null);
+      modal.submit.onclick = async () => {
+        const digits = normalizeWeddingWhatsApp(phone.field.value);
+        if (!digits) {
+          modal.status.textContent = 'Ingresa un WhatsApp válido con código de país. Ejemplo: +56 9 1234 5678.';
+          phone.field.focus(); return;
+        }
+        let draft = message.field.value.trim();
+        if (!draft) { modal.status.textContent = 'Escribe un mensaje para el invitado.'; message.field.focus(); return; }
+        // El enlace debe estar en el mensaje incluso si se eliminó al editar.
+        if (!draft.includes(url)) draft += '\n\n' + url;
+        // Reservar una pestaña dentro del clic real evita el bloqueo de ventanas
+        // cuando el usuario deba autorizar después el inicio del temporizador.
+        const popup = window.open('', '_blank');
+        if (popup) popup.opener = null;
+        modal.submit.disabled = true; modal.cancel.disabled = true;
+        if (digits !== (row.whatsapp || '')) {
+          const result = await client.from('lista_novios')
+            .update({ whatsapp: digits, updated_at: new Date().toISOString() })
+            .eq('id', row.id).select('id');
+          if (result.error || result.data?.length !== 1) {
+            if (popup) popup.close();
+            modal.status.textContent = 'No se pudo guardar el WhatsApp. No se abrió el envío.';
+            modal.submit.disabled = false; modal.cancel.disabled = false;
+            return;
+          }
+          row.whatsapp = digits;
+          renderWeddingLists();
+        }
+        close({ phone: digits, message: draft, popup });
+      };
+      message.field.focus();
+    });
   }
 
   function buildShareMessage(title, url) {
