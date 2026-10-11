@@ -174,6 +174,8 @@
     document.getElementById('createCompanionBtn').addEventListener('click', async function () {
       const name = principal.value.trim();
       const title = cover.value.trim();
+      const plazo_horas = readInviteHours();
+      if (plazo_horas === null) return;
       const lado = document.getElementById('inviteSideSelect').value;
       if (!lado) {
         inviteCreateStatus.textContent = 'Selecciona si la invitación es del novio o de la novia.';
@@ -185,7 +187,7 @@
       }
       inviteCreateStatus.textContent = 'Creando invitación...';
       const result = await client.from('invitaciones_personalizadas').insert([{
-        tipo: 'individual_acompanante', titulo_portada: title, invitados: [name], familia: null, lado
+        tipo: 'individual_acompanante', titulo_portada: title, invitados: [name], familia: null, lado, plazo_horas
       }]).select('*').single();
       if (result.error) {
         console.error(result.error);
@@ -294,7 +296,8 @@
         const meta = document.createElement('p'); meta.className = 'invite-meta'; meta.textContent = (invite.aperturas || 0) + ' apertura(s) · ' + (invite.activa ? 'Activa' : 'Desactivada'); card.appendChild(meta);
         const input = document.createElement('input'); input.readOnly = true; input.value = invitationUrl(invite.token); card.appendChild(input);
         const actions = document.createElement('div'); actions.className = 'invite-card-actions';
-        const copy = document.createElement('button'); copy.className='mini-button compact-button'; copy.textContent='Copiar link'; copy.onclick=()=>copyText(input.value,copy); actions.appendChild(copy);
+        addDeadlineSettings(card, invite);
+        const copy = document.createElement('button'); copy.className='mini-button compact-button'; copy.textContent='Copiar link'; copy.onclick=()=>shareInvitation('copy',input.value,h3.textContent,null,copy); actions.appendChild(copy);
         const whatsapp = document.createElement('button'); whatsapp.className='mini-button compact-button'; whatsapp.textContent='WhatsApp'; whatsapp.onclick=()=>shareInvitation('whatsapp',input.value,h3.textContent); actions.appendChild(whatsapp);
         const share = document.createElement('button'); share.className='mini-button compact-button'; share.textContent='Compartir'; share.onclick=()=>shareInvitation('native',input.value,h3.textContent); actions.appendChild(share);
         const email = document.createElement('button'); email.className='mini-button compact-button'; email.textContent='Correo'; email.onclick=()=>shareInvitation('email',input.value,h3.textContent); actions.appendChild(email);
@@ -544,8 +547,156 @@
     if (!document.hidden) window.setTimeout(maybeConfirmReturnedShare, 250);
   });
 
-  async function shareInvitation(method, url, title, row) {
+
+  // Los plazos se almacenan en Supabase, nunca en el navegador.
+  style.textContent += `
+    .invite-deadline-box{margin:12px 0;padding:13px;border-radius:13px;background:#f7f3eb;border:1px solid rgba(143,105,40,.18)}
+    .invite-deadline-box strong{display:block;font-size:13px;color:var(--admin-gold-dark)}
+    .invite-deadline-box p{margin:5px 0 8px;font-size:12px;color:var(--admin-muted);line-height:1.5}
+    .invite-deadline-settings{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .invite-deadline-settings label{font-size:12px;color:var(--admin-muted)}
+    .invite-deadline-settings input{width:100px!important;max-width:110px!important;height:37px!important}
+    .invite-deadline-settings .mini-button{width:auto;margin:0}
+    .deadline-modal-shade{position:fixed;inset:0;background:rgba(32,29,25,.58);z-index:9998;display:grid;place-items:center;padding:16px}
+    .deadline-modal-card{width:min(100%,440px);background:#fffaf4;color:var(--admin-text);padding:24px;border-radius:20px;box-shadow:0 18px 55px rgba(0,0,0,.25)}
+    .deadline-modal-card h3{color:var(--admin-gold-dark);margin:0 0 12px;font-size:21px}
+    .deadline-modal-card p{font-size:14px;line-height:1.55}
+    .deadline-modal-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+    .deadline-modal-buttons button{width:auto;margin:0!important;min-width:0!important;padding:10px 12px;font-size:13px}
+    @media(max-width:600px){.deadline-modal-buttons button{flex:1 1 140px}}
+  `;
+
+  function formatDeadlineCL(value) {
+    if (!value) return '';
+    return new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago', dateStyle: 'full', timeStyle: 'short'
+    }).format(new Date(value));
+  }
+
+  function findInviteByUrl(url) {
+    try {
+      const token = new URL(url).searchParams.get('inv');
+      return allInvites.find(invite => invite.token === token) || null;
+    } catch (_) { return null; }
+  }
+
+  function validInviteHours(hours) {
+    return Number.isInteger(hours) && hours >= 1 && hours <= 8760;
+  }
+
+  async function saveInviteHours(invite, hours, button) {
+    if (!validInviteHours(hours)) { alert('Elige entre 1 y 8760 horas.'); return; }
+    if (invite.plazo_inicio_at) { alert('Este plazo ya comenzó y no se puede modificar.'); return; }
+    button.disabled = true;
+    const result = await client.from('invitaciones_personalizadas')
+      .update({ plazo_horas: hours, updated_at: new Date().toISOString() })
+      .eq('id', invite.id).is('plazo_inicio_at', null).select('id');
+    if (result.error || result.data?.length !== 1) {
+      console.error(result.error);
+      alert('No se pudo guardar el plazo. Puede que ya se haya iniciado.');
+      button.disabled = false;
+      await loadAdminData();
+      return;
+    }
+    invite.plazo_horas = hours;
+    await loadAdminData();
+  }
+
+  function addDeadlineSettings(card, invite) {
+    const panel = document.createElement('div');
+    panel.className = 'invite-deadline-box';
+    const heading = document.createElement('strong');
+    heading.textContent = 'Plazo de confirmación';
+    const info = document.createElement('p');
+    const duration = invite.plazo_horas || 168;
+    if (invite.plazo_fin_at) {
+      const expired = new Date(invite.plazo_fin_at).getTime() <= Date.now();
+      info.textContent = (expired ? 'Plazo vencido. ' : 'Conteo iniciado. ') +
+        'Hasta el ' + formatDeadlineCL(invite.plazo_fin_at) + ' (' + duration + ' horas).';
+      panel.append(heading, info);
+    } else {
+      info.textContent = 'Sin iniciar · ' + duration + ' horas desde que decidas comenzar el conteo.';
+      panel.append(heading, info);
+      const controls = document.createElement('div');
+      controls.className = 'invite-deadline-settings';
+      const label = document.createElement('label');
+      label.textContent = 'Horas:';
+      const input = document.createElement('input');
+      input.type = 'number'; input.min = '1'; input.max = '8760'; input.step = '1';
+      input.value = String(duration);
+      input.setAttribute('aria-label', 'Horas para responder a ' +
+        (invite.titulo_portada || invite.familia || 'invitación'));
+      const save = document.createElement('button');
+      save.type = 'button'; save.className = 'mini-button compact-button';
+      save.textContent = 'Guardar plazo';
+      save.onclick = () => saveInviteHours(invite, Number(input.value), save);
+      controls.append(label, input, save);
+      panel.appendChild(controls);
+    }
+    card.appendChild(panel);
+  }
+
+  async function askStartDeadline(invite) {
+    if (!invite || !invite.activa) {
+      alert('No es posible compartir: la invitación no está disponible.');
+      return false;
+    }
+    if (invite.plazo_inicio_at) return true;
+    return new Promise(resolve => {
+      const shade = document.createElement('div');
+      shade.className = 'deadline-modal-shade';
+      const card = document.createElement('div');
+      card.className = 'deadline-modal-card';
+      card.setAttribute('role', 'dialog');
+      card.setAttribute('aria-modal', 'true');
+      const title = document.createElement('h3');
+      title.textContent = '¿Iniciar plazo de confirmación?';
+      const info = document.createElement('p');
+      info.textContent = 'Esta invitación tiene ' + (invite.plazo_horas || 168) +
+        ' horas para responder. Si comienzas ahora, la fecha límite quedará fija y no se reiniciará al compartir nuevamente.';
+      const actions = document.createElement('div');
+      actions.className = 'deadline-modal-buttons';
+      function button(text, green) {
+        const el = document.createElement('button');
+        el.type = 'button'; el.className = green ? 'green-button' : 'mini-button compact-button';
+        el.textContent = text; return el;
+      }
+      const start = button('Sí, iniciar ahora', true);
+      const without = button('Compartir sin iniciar', false);
+      const cancel = button('Cancelar', false);
+      function close(value) { shade.remove(); resolve(value); }
+      without.onclick = () => close(true);
+      cancel.onclick = () => close(false);
+      start.onclick = async () => {
+        start.disabled = true; without.disabled = true; cancel.disabled = true;
+        start.textContent = 'Iniciando...';
+        const result = await client.rpc('iniciar_plazo_invitacion', { p_invitacion_id: invite.id });
+        if (result.error || !result.data?.plazo_fin_at) {
+          console.error(result.error);
+          alert('No se pudo iniciar el plazo. No se compartió el enlace.');
+          start.disabled = false; without.disabled = false; cancel.disabled = false;
+          start.textContent = 'Sí, iniciar ahora';
+          return;
+        }
+        invite.plazo_inicio_at = result.data.plazo_inicio_at;
+        invite.plazo_fin_at = result.data.plazo_fin_at;
+        invite.plazo_horas = result.data.plazo_horas;
+        renderInvites();
+        close(true);
+      };
+      actions.append(start, without, cancel);
+      card.append(title, info, actions);
+      shade.appendChild(card);
+      document.body.appendChild(shade);
+      start.focus();
+    });
+  }
+
+  async function shareInvitation(method, url, title, row, clickedButton) {
     if (!url) return;
+    const invite = findInviteByUrl(url);
+    if (!(await askStartDeadline(invite))) return;
+    if (method === 'copy') { await copyText(url, clickedButton); return; }
     const message = buildShareMessage(title, url);
     const nextStage = row ? shareStageInfo(row) : null;
 
@@ -603,6 +754,8 @@
     });
 
     box.appendChild(actions);
+    window.shareGeneratedInvite = (method, button) =>
+      shareInvitation(method, generatedInviteUrl.value, generatedInviteTitle.textContent, null, button);
   }
 
   function setupWeddingLists() {
@@ -775,13 +928,18 @@
 
   async function createWeddingInvite(row) {
     if (row.invitacion_id) return;
+    const answer = prompt('Horas disponibles para responder a esta invitación (ej. 168 = 7 días):', '168');
+    if (answer === null) return;
+    const plazo_horas = Number(answer);
+    if (!validInviteHours(plazo_horas)) { alert('Indica un plazo entre 1 y 8760 horas.'); return; }
 
     const result = await client.from('invitaciones_personalizadas').insert([{
       tipo: 'lista_cerrada',
       titulo_portada: 'Invitación para ' + row.nombre,
       invitados: [row.nombre],
       familia: null,
-      lado: row.lado
+      lado: row.lado,
+      plazo_horas
     }]).select('*').single();
 
     if (result.error) {
@@ -1197,7 +1355,7 @@
         copy.className = 'mini-button compact-button';
         copy.type = 'button';
         copy.textContent = 'Copiar';
-        copy.addEventListener('click', () => copyText(url, copy));
+        copy.addEventListener('click', () => shareInvitation('copy', url, title, row, copy));
         actions.appendChild(copy);
       }
 
