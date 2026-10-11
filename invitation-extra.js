@@ -120,12 +120,20 @@
     attendance.addEventListener('change', syncAttendance);
     withCompanion.addEventListener('change', function () { companionBox.classList.toggle('hidden', !this.checked); });
     syncAttendance();
+    // El contador común también se aplica a la confirmación individual + 1.
+    if (typeof window.loadRsvpDeadline === 'function') {
+      await window.loadRsvpDeadline();
+    }
 
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
       event.stopImmediatePropagation();
       const status = document.getElementById('status');
       const submit = document.getElementById('submitRsvpBtn');
+      if (window.isRsvpDeadlineExpired?.()) {
+        status.textContent = 'El plazo para confirmar esta invitación ya finalizó.';
+        return;
+      }
       submit.disabled = true;
       status.textContent = 'Enviando confirmación...';
 
