@@ -98,6 +98,19 @@
     document.getElementById('brideInvitationCount').textContent = brideCount + (brideCount === 1 ? ' invitación' : ' invitaciones');
     if (activeInvitationSide) {
       document.getElementById('invitationSideHeading').textContent = activeInvitationSide === 'novio' ? 'Invitaciones del novio' : 'Invitaciones de la novia';
+      const sameSide = allInvites.filter(invite => invite.lado === activeInvitationSide);
+      const available = sameSide.filter(invite => !invite.plazo_inicio_at).length;
+      const protectedCount = sameSide.length - available;
+      document.getElementById('bulkDeadlineTitle').textContent = activeInvitationSide === 'novio'
+        ? 'Fecha límite para todas las invitaciones del novio'
+        : 'Fecha límite para todas las invitaciones de la novia';
+      document.getElementById('bulkDeadlineDescription').textContent =
+        'Elige una fecha común para ' + (activeInvitationSide === 'novio' ? 'el novio' : 'la novia') +
+        '. Se aplicará a todas las invitaciones sin plazo iniciado, incluyendo las desactivadas.';
+      document.getElementById('bulkDeadlineEligible').textContent =
+        available + (available === 1 ? ' disponible' : ' disponibles') +
+        (protectedCount ? ' · ' + protectedCount + ' protegidas' : '');
+      document.getElementById('applyBulkDeadlineBtn').disabled = available === 0;
       unassignedPanel.classList.add('hidden');
     } else {
       const pending = allInvites.filter(i => i.lado !== 'novio' && i.lado !== 'novia');
@@ -111,10 +124,84 @@
     activeInvitationSide = side;
     window.activeInvitationSide = side;
     activeFilter = 'all';
+    document.getElementById('bulkDeadlineInput').value = '';
+    document.getElementById('bulkDeadlineStatus').textContent = '';
     document.querySelectorAll('#linksSection .filter-chip').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
     renderInvites();
     const main = document.querySelector('.dashboard-main');
     if (main) main.scrollTop = 0;
+  }
+
+
+  async function applyBulkDeadline() {
+    const side = activeInvitationSide;
+    if (side !== 'novio' && side !== 'novia') return;
+    const button = document.getElementById('applyBulkDeadlineBtn');
+    const status = document.getElementById('bulkDeadlineStatus');
+    const input = document.getElementById('bulkDeadlineInput');
+    const iso = chileDeadlineToIso(input.value);
+    if (!iso || Date.parse(iso) <= Date.now() + 60000) {
+      status.textContent = 'Selecciona una fecha y hora futura válida en horario de Chile.';
+      return;
+    }
+
+    const sideText = side === 'novio' ? 'novio' : 'novia';
+    button.disabled = true;
+    status.textContent = 'Verificando invitaciones...';
+    try {
+      // El resumen se consulta de nuevo para evitar presentar cifras antiguas.
+      const lookup = await client.from('invitaciones_personalizadas')
+        .select('id, plazo_inicio_at').eq('lado', side);
+      if (lookup.error) throw lookup.error;
+      const rows = lookup.data || [];
+      const eligible = rows.filter(invite => !invite.plazo_inicio_at).length;
+      const locked = rows.length - eligible;
+      if (eligible === 0) {
+        status.textContent = rows.length
+          ? 'Todas las invitaciones de este lado ya tienen el conteo iniciado. No se modificaron.'
+          : 'No hay invitaciones de este lado para actualizar.';
+        return;
+      }
+
+      const accepted = confirm(
+        '¿Establecer el ' + formatDeadlineCL(iso) + ' como fecha límite para ' +
+        eligible + (eligible === 1 ? ' invitación del ' : ' invitaciones del ') + sideText + '?\n\n' +
+        'Se reemplazarán también las fechas individuales ya configuradas que aún no hayan iniciado el conteo.' +
+        (locked ? '\n' + locked + ' invitación(es) con conteo iniciado conservarán su fecha.' : '') +
+        '\n\nNo se enviarán mensajes ni se iniciarán nuevos conteos.'
+      );
+      if (!accepted) {
+        status.textContent = 'Operación cancelada. No se modificaron fechas.';
+        return;
+      }
+
+      status.textContent = 'Guardando fecha límite para ' + sideText + '...';
+      // Un único UPDATE transaccional evita modificaciones parciales y
+      // protege las invitaciones que iniciaron el conteo durante la operación.
+      const result = await client.rpc('establecer_fecha_limite_lado', {
+        p_lado: side, p_fecha_limite: iso
+      });
+      if (result.error) throw result.error;
+      const changed = Number(result.data?.actualizadas);
+      const preserved = Number(result.data?.protegidas);
+      if (!Number.isInteger(changed) || changed < 0) {
+        throw new Error('Supabase no confirmó cuántas invitaciones fueron actualizadas.');
+      }
+      await loadAdminData();
+      if (side === activeInvitationSide) {
+        document.getElementById('bulkDeadlineStatus').textContent =
+          'Fecha guardada para ' + changed + (changed === 1 ? ' invitación' : ' invitaciones') +
+          ' del ' + sideText + '.' +
+          (preserved ? ' Se conservaron ' + preserved + ' plazo(s) ya iniciados.' : '');
+      }
+    } catch (error) {
+      console.error('Error al establecer la fecha límite masiva', error);
+      status.textContent = 'No se pudo aplicar la fecha. No se confirmó ningún cambio. Revisa las invitaciones y vuelve a intentarlo.';
+    } finally {
+      const sameSideAvailable = allInvites.some(invite =>
+        invite.lado === activeInvitationSide && !invite.plazo_inicio_at);
+      button.disabled = !sameSideAvailable;
+    }
   }
 
   function setupInvitationSideNavigation() {
@@ -123,6 +210,7 @@
     });
     document.getElementById('backToInvitationSides').addEventListener('click', () => selectInvitationSide(null));
     window.addEventListener('admin:invitations-opened', () => selectInvitationSide(null));
+    document.getElementById('applyBulkDeadlineBtn').addEventListener('click', applyBulkDeadline);
   }
 
   function setupCreateMode() {
