@@ -182,6 +182,24 @@
             <button type="button" class="mini-button compact-button" id="backToInvitationSides">← Volver a invitaciones</button>
             <h2 id="invitationSideHeading">Invitaciones</h2>
           </div>
+          <div class="bulk-deadline-panel" id="bulkDeadlinePanel">
+            <div class="bulk-deadline-heading">
+              <div>
+                <h3 id="bulkDeadlineTitle">Fecha límite para todas las invitaciones</h3>
+                <p id="bulkDeadlineDescription">Aplica una fecha común a todas las invitaciones del lado seleccionado cuyo plazo aún no haya comenzado.</p>
+              </div>
+              <span class="bulk-deadline-count" id="bulkDeadlineEligible">0 disponibles</span>
+            </div>
+            <div class="bulk-deadline-controls">
+              <div class="bulk-deadline-field">
+                <label for="bulkDeadlineInput">Fecha y hora límite (Chile continental)</label>
+                <input type="datetime-local" id="bulkDeadlineInput" step="60" aria-describedby="bulkDeadlineHelp" />
+              </div>
+              <button type="button" class="green-button" id="applyBulkDeadlineBtn">Establecer a todas</button>
+            </div>
+            <p class="form-help" id="bulkDeadlineHelp">Reemplaza las fechas individuales todavía no iniciadas, incluso si hay filtros activos. Las invitaciones con plazo iniciado no se modificarán.</p>
+            <p id="bulkDeadlineStatus" class="status bulk-deadline-status" role="status" aria-live="polite"></p>
+          </div>
         <div class="filter-row">
           <button class="filter-chip active" data-filter="all">Todas</button>
           <button class="filter-chip" data-filter="lista_cerrada">Lista definida</button>
