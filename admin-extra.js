@@ -174,8 +174,8 @@
     document.getElementById('createCompanionBtn').addEventListener('click', async function () {
       const name = principal.value.trim();
       const title = cover.value.trim();
-      const plazo_horas = readInviteHours();
-      if (plazo_horas === null) return;
+      const plazo_fecha_limite_at = readInviteDeadline();
+      if (!plazo_fecha_limite_at) return;
       const lado = document.getElementById('inviteSideSelect').value;
       if (!lado) {
         inviteCreateStatus.textContent = 'Selecciona si la invitación es del novio o de la novia.';
@@ -187,7 +187,7 @@
       }
       inviteCreateStatus.textContent = 'Creando invitación...';
       const result = await client.from('invitaciones_personalizadas').insert([{
-        tipo: 'individual_acompanante', titulo_portada: title, invitados: [name], familia: null, lado, plazo_horas
+        tipo: 'individual_acompanante', titulo_portada: title, invitados: [name], familia: null, lado, plazo_fecha_limite_at
       }]).select('*').single();
       if (result.error) {
         console.error(result.error);
@@ -555,7 +555,7 @@
     .invite-deadline-box p{margin:5px 0 8px;font-size:12px;color:var(--admin-muted);line-height:1.5}
     .invite-deadline-settings{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .invite-deadline-settings label{font-size:12px;color:var(--admin-muted)}
-    .invite-deadline-settings input{width:100px!important;max-width:110px!important;height:37px!important}
+    .invite-deadline-settings input{width:min(100%,290px)!important;min-width:210px!important;max-width:100%!important;height:39px!important}
     .invite-deadline-settings .mini-button{width:auto;margin:0}
     .deadline-modal-shade{position:fixed;inset:0;background:rgba(32,29,25,.58);z-index:9998;display:grid;place-items:center;padding:16px}
     .deadline-modal-card{width:min(100%,440px);background:#fffaf4;color:var(--admin-text);padding:24px;border-radius:20px;box-shadow:0 18px 55px rgba(0,0,0,.25)}
@@ -580,25 +580,60 @@
     } catch (_) { return null; }
   }
 
-  function validInviteHours(hours) {
-    return Number.isInteger(hours) && hours >= 1 && hours <= 8760;
+
+  // Conversión estricta del selector a America/Santiago, independiente de la zona
+  // horaria configurada en el dispositivo del administrador.
+  function chileDeadlineInputFromIso(value) {
+    if (!value || !Number.isFinite(new Date(value).getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Santiago',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date(value));
+    const fields = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return fields.year + '-' + fields.month + '-' + fields.day +
+      'T' + fields.hour + ':' + fields.minute;
   }
 
-  async function saveInviteHours(invite, hours, button) {
-    if (!validInviteHours(hours)) { alert('Elige entre 1 y 8760 horas.'); return; }
-    if (invite.plazo_inicio_at) { alert('Este plazo ya comenzó y no se puede modificar.'); return; }
+  function chileDeadlineToIso(text) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(text || '');
+    if (!match) return null;
+    const [, year, month, day, hour, minute] = match.map(Number);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
+    const wallUtc = Date.UTC(year, month - 1, day, hour, minute);
+    // Chile continental utiliza UTC-3 o UTC-4. Verificar candidatos evita
+    // convertir erróneamente horas inexistentes por cambios de horario.
+    const candidates = [-3, -4].map(offset => new Date(wallUtc - offset * 3600000))
+      .filter(date => chileDeadlineInputFromIso(date) === text);
+    if (!candidates.length) return null;
+    candidates.sort((a, b) => a.getTime() - b.getTime());
+    return candidates[0].toISOString();
+  }
+  window.chileDeadlineToIso = chileDeadlineToIso;
+  window.chileDeadlineInputFromIso = chileDeadlineInputFromIso;
+
+  async function saveInviteDeadline(invite, textValue, button) {
+    const deadline = chileDeadlineToIso(textValue);
+    if (!deadline || Date.parse(deadline) <= Date.now() + 60000) {
+      alert('Selecciona una fecha y hora futura en horario de Chile.');
+      return;
+    }
+    if (invite.plazo_inicio_at) {
+      alert('El plazo ya comenzó y su fecha límite no se puede modificar.');
+      return;
+    }
     button.disabled = true;
     const result = await client.from('invitaciones_personalizadas')
-      .update({ plazo_horas: hours, updated_at: new Date().toISOString() })
+      .update({ plazo_fecha_limite_at: deadline, updated_at: new Date().toISOString() })
       .eq('id', invite.id).is('plazo_inicio_at', null).select('id');
     if (result.error || result.data?.length !== 1) {
       console.error(result.error);
-      alert('No se pudo guardar el plazo. Puede que ya se haya iniciado.');
+      alert('No se pudo guardar la fecha límite. Actualiza los datos e inténtalo de nuevo.');
       button.disabled = false;
       await loadAdminData();
       return;
     }
-    invite.plazo_horas = hours;
+    invite.plazo_fecha_limite_at = deadline;
     await loadAdminData();
   }
 
@@ -606,30 +641,34 @@
     const panel = document.createElement('div');
     panel.className = 'invite-deadline-box';
     const heading = document.createElement('strong');
-    heading.textContent = 'Plazo de confirmación';
+    heading.textContent = 'Fecha límite para responder';
     const info = document.createElement('p');
-    const duration = invite.plazo_horas || 168;
-    if (invite.plazo_fin_at) {
-      const expired = new Date(invite.plazo_fin_at).getTime() <= Date.now();
+    const limit = invite.plazo_fin_at || invite.plazo_fecha_limite_at;
+    if (invite.plazo_inicio_at) {
+      const expired = new Date(limit).getTime() <= Date.now();
       info.textContent = (expired ? 'Plazo vencido. ' : 'Conteo iniciado. ') +
-        'Hasta el ' + formatDeadlineCL(invite.plazo_fin_at) + ' (' + duration + ' horas).';
+        'Hasta el ' + formatDeadlineCL(limit) + '.';
       panel.append(heading, info);
     } else {
-      info.textContent = 'Sin iniciar · ' + duration + ' horas desde que decidas comenzar el conteo.';
+      info.textContent = limit
+        ? (Date.parse(limit) <= Date.now() ? 'Fecha vencida. Debes establecer otra. ' : 'Pendiente de iniciar. ') +
+          'Fecha límite: ' + formatDeadlineCL(limit) + '.'
+        : 'Sin fecha límite. Establécela antes de compartir la invitación.';
       panel.append(heading, info);
       const controls = document.createElement('div');
       controls.className = 'invite-deadline-settings';
       const label = document.createElement('label');
-      label.textContent = 'Horas:';
+      label.textContent = 'Fecha y hora (Chile):';
       const input = document.createElement('input');
-      input.type = 'number'; input.min = '1'; input.max = '8760'; input.step = '1';
-      input.value = String(duration);
-      input.setAttribute('aria-label', 'Horas para responder a ' +
+      input.type = 'datetime-local';
+      input.step = '60';
+      input.value = chileDeadlineInputFromIso(invite.plazo_fecha_limite_at || '');
+      input.setAttribute('aria-label', 'Fecha y hora límite de ' +
         (invite.titulo_portada || invite.familia || 'invitación'));
       const save = document.createElement('button');
       save.type = 'button'; save.className = 'mini-button compact-button';
-      save.textContent = 'Guardar plazo';
-      save.onclick = () => saveInviteHours(invite, Number(input.value), save);
+      save.textContent = 'Guardar fecha límite';
+      save.onclick = () => saveInviteDeadline(invite, input.value, save);
       controls.append(label, input, save);
       panel.appendChild(controls);
     }
@@ -640,6 +679,15 @@
     if (!invite || !invite.activa) {
       alert('No es posible compartir: la invitación no está disponible.');
       return false;
+    }
+    const limit = invite.plazo_fin_at || invite.plazo_fecha_limite_at;
+    if (!limit) {
+      alert('Debes establecer primero la fecha y hora límite de esta invitación.');
+      return null;
+    }
+    if (Date.parse(limit) <= Date.now()) {
+      alert('La fecha límite ya terminó. No es posible compartir esta invitación con plazo vencido.');
+      return null;
     }
     if (invite.plazo_inicio_at) return { allowed: true, popup: null };
     return new Promise(resolve => {
@@ -652,8 +700,8 @@
       const title = document.createElement('h3');
       title.textContent = '¿Iniciar plazo de confirmación?';
       const info = document.createElement('p');
-      info.textContent = 'Esta invitación tiene ' + (invite.plazo_horas || 168) +
-        ' horas para responder. Si comienzas ahora, la fecha límite quedará fija y no se reiniciará al compartir nuevamente.';
+      info.textContent = 'La confirmación termina el ' + formatDeadlineCL(limit) +
+        ' (hora de Chile). Si inicias ahora, el tiempo restante se calculará hasta esa fecha exacta. Compartir de nuevo no reinicia el conteo.';
       const actions = document.createElement('div');
       actions.className = 'deadline-modal-buttons';
       function button(text, green) {
@@ -688,7 +736,7 @@
         }
         invite.plazo_inicio_at = result.data.plazo_inicio_at;
         invite.plazo_fin_at = result.data.plazo_fin_at;
-        invite.plazo_horas = result.data.plazo_horas;
+        invite.plazo_fecha_limite_at = result.data.plazo_fecha_limite_at || limit;
         renderInvites();
         close({ allowed: true, popup });
       };
@@ -947,10 +995,14 @@
 
   async function createWeddingInvite(row) {
     if (row.invitacion_id) return;
-    const answer = prompt('Horas disponibles para responder a esta invitación (ej. 168 = 7 días):', '168');
+    const initial = chileDeadlineInputFromIso(new Date(Date.now() + 7 * 86400000).toISOString());
+    const answer = prompt('Fecha y hora límite para confirmar (Chile). Formato AAAA-MM-DDTHH:mm:', initial);
     if (answer === null) return;
-    const plazo_horas = Number(answer);
-    if (!validInviteHours(plazo_horas)) { alert('Indica un plazo entre 1 y 8760 horas.'); return; }
+    const plazo_fecha_limite_at = chileDeadlineToIso(answer.trim());
+    if (!plazo_fecha_limite_at || Date.parse(plazo_fecha_limite_at) <= Date.now() + 60000) {
+      alert('Debes indicar una fecha y hora futuras válidas en horario de Chile.');
+      return;
+    }
 
     const result = await client.from('invitaciones_personalizadas').insert([{
       tipo: 'lista_cerrada',
@@ -958,7 +1010,7 @@
       invitados: [row.nombre],
       familia: null,
       lado: row.lado,
-      plazo_horas
+      plazo_fecha_limite_at
     }]).select('*').single();
 
     if (result.error) {
