@@ -493,7 +493,12 @@
     // Sin selección, los tres formularios existentes conservan su comportamiento.
     section.addEventListener('click', async event => {
       const button = event.target.closest('#createClosedBtn,#createOpenBtn,#createCompanionBtn');
-      if (!button || createListBusy) return;
+      if (!button) return;
+      if (createListBusy) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       const lado = document.getElementById('inviteSideSelect').value;
       const mode = button.id === 'createClosedBtn' ? 'lista_cerrada'
         : button.id === 'createOpenBtn' ? 'familia_libre' : 'individual_acompanante';
