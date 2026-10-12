@@ -15,6 +15,23 @@
     .invite-delete-button:hover{background:#fbe9e6!important}
     .dashboard-mini-grid.admin-three-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
     .companion-form-note{margin:8px 0 2px;color:#766e66;font-size:13px;line-height:1.45}
+    .create-list-picker{margin:18px 0;background:var(--admin-surface);border:1px solid var(--admin-line);border-radius:18px;padding:16px 20px;box-shadow:var(--admin-shadow)}
+    .create-list-picker summary{cursor:pointer;font-weight:750;color:var(--admin-gold-dark);font-size:16px}
+    .create-list-picker summary::marker{color:var(--admin-olive)}
+    .create-list-picker .form-help{font-size:12px}
+    .create-list-picker-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:13px 0 9px}
+    .create-list-picker-search{flex:1 1 230px;min-width:0!important;height:42px!important}
+    .create-list-picker-controls .mini-button{width:auto!important;margin:0!important;padding:8px 11px!important;min-width:0!important}
+    .create-list-picker-people{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:6px;max-height:230px;overflow-y:auto;padding:4px}
+    .create-list-picker-person{display:flex!important;align-items:flex-start!important;gap:10px;min-width:0;margin:0!important;border:1px solid var(--admin-line);padding:10px;border-radius:10px;background:var(--admin-surface-2);cursor:pointer}
+    .create-list-picker-person.is-linked{opacity:.67;cursor:not-allowed}
+    .create-list-picker-person input[type="checkbox"]{appearance:auto!important;flex:0 0 18px!important;width:18px!important;height:18px!important;margin:1px 0 0!important;padding:0!important;border:0!important;box-shadow:none!important;accent-color:var(--admin-olive)}
+    .create-list-picker-person span{display:grid;min-width:0;gap:3px}
+    .create-list-picker-person strong{font-size:13px;overflow-wrap:anywhere;color:var(--admin-text)}
+    .create-list-picker-person small{font-size:11px;line-height:1.35;color:var(--admin-muted)}
+    .create-list-picker-status{font-size:12px;color:var(--admin-muted);line-height:1.5;margin:8px 0 0!important}
+    .create-list-picker-status.is-warning{color:#925344;font-weight:700}
+    @media(max-width:610px){.create-list-picker{padding:13px}.create-list-picker-people{grid-template-columns:1fr}.create-list-picker-controls .mini-button{flex:1 1 110px}}
     @media(max-width:980px){.mode-grid.admin-three-modes{grid-template-columns:1fr}.dashboard-mini-grid.admin-three-stats{grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
@@ -289,6 +306,285 @@
       showGenerated(result.data);
       await loadAdminData();
     });
+  }
+
+
+  // Crear invitaciones vinculadas directamente a la lista del novio o la novia.
+  // La RPC crea el link y asocia a todos los seleccionados en una sola transacción.
+  const createListSelectedIds = new Set();
+  let createListBusy = false;
+
+  function selectedCreateRows() {
+    const side = document.getElementById('inviteSideSelect')?.value;
+    return weddingListRows
+      .filter(row => row.lado === side && !row.invitacion_id && createListSelectedIds.has(row.id))
+      .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es-CL'));
+  }
+
+  function syncCreateListFields() {
+    const people = selectedCreateRows();
+    const namesField = document.getElementById('closedNames');
+    const principal = document.getElementById('companionPrincipalName');
+    const closedTitle = document.getElementById('closedCoverTitle');
+    const companionTitle = document.getElementById('companionCoverTitle');
+
+    if (people.length) {
+      namesField.value = people.map(row => row.nombre).join('\n');
+      namesField.readOnly = true;
+      namesField.dataset.fromWeddingList = '1';
+      if (!closedTitle.value.trim() || closedTitle.dataset.fromWeddingList) {
+        closedTitle.value = people.length === 1
+          ? 'Invitación para ' + people[0].nombre
+          : 'Invitación para ' + people[0].nombre + ' y ' + (people.length - 1) + ' personas más';
+        closedTitle.dataset.fromWeddingList = '1';
+      }
+      principal.value = people.length === 1 ? people[0].nombre : '';
+      principal.readOnly = true;
+      principal.dataset.fromWeddingList = '1';
+      if (people.length === 1 && (!companionTitle.value.trim() || companionTitle.dataset.fromWeddingList)) {
+        companionTitle.value = 'Invitación para ' + people[0].nombre;
+        companionTitle.dataset.fromWeddingList = '1';
+      }
+    } else {
+      if (namesField.dataset.fromWeddingList) namesField.value = '';
+      if (principal.dataset.fromWeddingList) principal.value = '';
+      if (closedTitle.dataset.fromWeddingList) closedTitle.value = '';
+      if (companionTitle.dataset.fromWeddingList) companionTitle.value = '';
+      delete namesField.dataset.fromWeddingList;
+      delete principal.dataset.fromWeddingList;
+      delete closedTitle.dataset.fromWeddingList;
+      delete companionTitle.dataset.fromWeddingList;
+      namesField.readOnly = false;
+      principal.readOnly = false;
+    }
+  }
+
+  function renderCreateListPicker() {
+    const panel = document.getElementById('createListPicker');
+    if (!panel) return;
+    const side = document.getElementById('inviteSideSelect').value;
+    const peopleBox = document.getElementById('createListPeople');
+    const summary = document.getElementById('createListSummary');
+    const status = document.getElementById('createListPickerStatus');
+    const search = document.getElementById('createListSearch').value.trim().toLocaleLowerCase('es-CL');
+    const mode = document.querySelector('#createSection .mode-card.active')?.dataset.mode || 'lista_cerrada';
+
+    const sideRows = weddingListRows.filter(row => row.lado === side)
+      .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es-CL', { sensitivity: 'base' }));
+    const available = sideRows.filter(row => !row.invitacion_id);
+    const availableIds = new Set(available.map(row => row.id));
+    for (const id of createListSelectedIds) {
+      if (!availableIds.has(id)) createListSelectedIds.delete(id);
+    }
+    const filtered = sideRows.filter(row => String(row.nombre).toLocaleLowerCase('es-CL').includes(search));
+    const picked = selectedCreateRows();
+
+    summary.textContent = side === 'novio' || side === 'novia'
+      ? 'Seleccionar personas de la lista ' + (side === 'novio' ? 'del novio' : 'de la novia') +
+        ' · ' + available.length + ' disponibles'
+      : 'Seleccionar personas de la lista del novio o novia';
+    peopleBox.replaceChildren();
+    for (const person of filtered) {
+      const label = document.createElement('label');
+      label.className = 'create-list-picker-person' + (person.invitacion_id ? ' is-linked' : '');
+      const check = document.createElement('input');
+      check.type = 'checkbox';
+      check.value = person.id;
+      check.disabled = !!person.invitacion_id || createListBusy;
+      check.checked = createListSelectedIds.has(person.id);
+      check.setAttribute('aria-label', 'Seleccionar ' + person.nombre);
+      check.addEventListener('change', () => {
+        if (check.checked) {
+          if (createListSelectedIds.size >= 100) {
+            check.checked = false;
+            inviteCreateStatus.textContent = 'Máximo 100 personas por invitación.';
+            return;
+          }
+          createListSelectedIds.add(person.id);
+        } else createListSelectedIds.delete(person.id);
+        renderCreateListPicker();
+      });
+      const info = document.createElement('span');
+      const name = document.createElement('strong');
+      name.textContent = person.nombre;
+      const detail = document.createElement('small');
+      const linkedInvite = person.invitacion_id ? weddingInviteFor(person) : null;
+      detail.textContent = person.invitacion_id
+        ? 'Ya tiene link · ' + (linkedInvite ? (typeLabels[linkedInvite.tipo] || 'Invitación') : 'invitación existente')
+        : (person.whatsapp ? 'WhatsApp registrado' : 'WhatsApp pendiente') + ' · Sin link';
+      info.append(name, detail);
+      label.append(check, info);
+      peopleBox.appendChild(label);
+    }
+    if (!filtered.length) {
+      const empty = document.createElement('p');
+      empty.className = 'form-help';
+      empty.textContent = side
+        ? 'No hay nombres que coincidan. Puedes agregarlos desde «Lista de novios».'
+        : 'Selecciona primero si la invitación es del novio o la novia.';
+      peopleBox.appendChild(empty);
+    }
+    document.getElementById('createListSelectAll').disabled = !available.some(row => !search || row.nombre.toLocaleLowerCase('es-CL').includes(search)) || createListBusy;
+    document.getElementById('createListClear').disabled = !picked.length || createListBusy;
+    const modeLimit = mode === 'individual_acompanante' && picked.length > 1;
+    status.classList.toggle('is-warning', modeLimit);
+    status.textContent = picked.length
+      ? picked.length + (picked.length === 1 ? ' persona seleccionada. ' : ' personas seleccionadas. ') +
+        (modeLimit
+          ? 'Para «Persona + acompañante» deja una sola persona marcada.'
+          : 'Al crear el enlace, se guardará automáticamente en cada ficha seleccionada.')
+      : 'Marca personas para vincularlas automáticamente al crear el enlace. Los que ya tienen link no se pueden seleccionar.';
+    syncCreateListFields();
+  }
+
+  function setupCreateFromWeddingList() {
+    const section = document.getElementById('createSection');
+    const modeGrid = section?.querySelector('.mode-grid');
+    if (!modeGrid || document.getElementById('createListPicker')) return;
+
+    const panel = document.createElement('details');
+    panel.id = 'createListPicker';
+    panel.className = 'create-list-picker';
+    panel.open = true;
+    panel.innerHTML = [
+      '<summary id="createListSummary">Seleccionar personas de la lista del novio o novia</summary>',
+      '<p class="form-help">Elige las personas que recibirán este enlace. Después selecciona «Lista definida», «Familia abierta» o «Persona + acompañante». Las personas con invitación ya vinculada se muestran deshabilitadas.</p>',
+      '<div class="create-list-picker-controls">',
+      '<input class="create-list-picker-search" id="createListSearch" type="search" placeholder="Buscar por nombre..." aria-label="Buscar personas en la lista" />',
+      '<button class="mini-button compact-button" id="createListSelectAll" type="button">Seleccionar disponibles</button>',
+      '<button class="mini-button compact-button" id="createListClear" type="button">Quitar selección</button>',
+      '</div>',
+      '<div class="create-list-picker-people" id="createListPeople" aria-label="Personas de la lista"></div>',
+      '<p class="create-list-picker-status" id="createListPickerStatus" role="status" aria-live="polite"></p>'
+    ].join('');
+    modeGrid.parentNode.insertBefore(panel, modeGrid);
+
+    document.getElementById('createListSearch').addEventListener('input', renderCreateListPicker);
+    document.getElementById('createListSelectAll').addEventListener('click', () => {
+      const side = document.getElementById('inviteSideSelect').value;
+      const filter = document.getElementById('createListSearch').value.trim().toLocaleLowerCase('es-CL');
+      const matches = weddingListRows.filter(row => row.lado === side && !row.invitacion_id &&
+        String(row.nombre).toLocaleLowerCase('es-CL').includes(filter));
+      const allSelected = matches.length && matches.every(row => createListSelectedIds.has(row.id));
+      for (const row of matches) {
+        if (allSelected) createListSelectedIds.delete(row.id);
+        else if (createListSelectedIds.size < 100) createListSelectedIds.add(row.id);
+      }
+      renderCreateListPicker();
+    });
+    document.getElementById('createListClear').addEventListener('click', () => {
+      createListSelectedIds.clear();
+      renderCreateListPicker();
+    });
+    document.getElementById('inviteSideSelect').addEventListener('change', () => {
+      createListSelectedIds.clear();
+      document.getElementById('createListSearch').value = '';
+      renderCreateListPicker();
+    });
+    modeGrid.addEventListener('click', renderCreateListPicker);
+    document.getElementById('closedCoverTitle').addEventListener('input', function () {
+      delete this.dataset.fromWeddingList;
+    });
+    document.getElementById('companionCoverTitle').addEventListener('input', function () {
+      delete this.dataset.fromWeddingList;
+    });
+
+    // Se interceptan solamente las creaciones desde una selección de la lista.
+    // Sin selección, los tres formularios existentes conservan su comportamiento.
+    section.addEventListener('click', async event => {
+      const button = event.target.closest('#createClosedBtn,#createOpenBtn,#createCompanionBtn');
+      if (!button || createListBusy) return;
+      const lado = document.getElementById('inviteSideSelect').value;
+      const mode = button.id === 'createClosedBtn' ? 'lista_cerrada'
+        : button.id === 'createOpenBtn' ? 'familia_libre' : 'individual_acompanante';
+      if (!createListSelectedIds.size) {
+        // Evita crear un enlace sin guardarlo en una persona existente de la lista.
+        const typed = mode === 'lista_cerrada'
+          ? document.getElementById('closedNames').value.split(/\n+/).map(x => x.trim()).filter(Boolean)
+          : mode === 'individual_acompanante'
+            ? [document.getElementById('companionPrincipalName').value.trim()] : [];
+        const existing = weddingListRows.find(row => row.lado === lado &&
+          typed.some(name => normalizeWeddingName(name) === normalizeWeddingName(row.nombre)));
+        if (!existing) return;
+        event.preventDefault();
+        event.stopPropagation();
+        inviteCreateStatus.textContent = existing.invitacion_id
+          ? '«' + existing.nombre + '» ya tiene una invitación. Revísala en la lista antes de crear otra.'
+          : '«' + existing.nombre + '» está en la lista. Selecciónalo arriba para guardar el link automáticamente en su ficha.';
+        panel.open = true;
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      const people = selectedCreateRows();
+      if (!lado || people.length !== createListSelectedIds.size) {
+        inviteCreateStatus.textContent = 'La selección cambió. Actualiza la lista y vuelve a elegir.';
+        renderCreateListPicker();
+        return;
+      }
+      if (mode === 'individual_acompanante' && people.length !== 1) {
+        inviteCreateStatus.textContent = 'Selecciona una sola persona para la invitación con acompañante.';
+        return;
+      }
+      const titleInput = document.getElementById(mode === 'lista_cerrada' ? 'closedCoverTitle'
+        : mode === 'familia_libre' ? 'openCoverTitle' : 'companionCoverTitle');
+      const title = titleInput.value.trim();
+      const family = document.getElementById('openFamilyName').value.trim();
+      if (title.length < 3 || (mode === 'familia_libre' && family.length < 2)) {
+        inviteCreateStatus.textContent = mode === 'familia_libre'
+          ? 'Completa el nombre de la familia o grupo y el texto de portada.'
+          : 'Completa el texto de portada.';
+        return;
+      }
+      const deadline = readInviteDeadline();
+      if (!deadline) return;
+      createListBusy = true;
+      button.disabled = true;
+      renderCreateListPicker();
+      inviteCreateStatus.textContent = 'Creando enlace y vinculando ' + people.length + ' persona(s)...';
+      try {
+        const result = await client.rpc('crear_invitacion_desde_lista_tipada', {
+          p_lado: lado,
+          p_ids: people.map(row => row.id),
+          p_tipo: mode,
+          p_titulo: title,
+          p_fecha_limite: deadline,
+          p_familia: mode === 'familia_libre' ? family : null
+        });
+        if (result.error || !result.data) throw result.error || new Error('No se recibió ID de la invitación');
+        const created = await client.from('invitaciones_personalizadas')
+          .select('*').eq('id', result.data).single();
+        // El vínculo ya se guardó en la base de datos, incluso si falla esta lectura.
+        createListSelectedIds.clear();
+        if (mode === 'lista_cerrada') {
+          document.getElementById('closedNames').value = '';
+          document.getElementById('closedCoverTitle').value = '';
+        } else if (mode === 'individual_acompanante') {
+          document.getElementById('companionPrincipalName').value = '';
+          document.getElementById('companionCoverTitle').value = '';
+        } else {
+          document.getElementById('openFamilyName').value = '';
+          document.getElementById('openCoverTitle').value = '';
+          delete document.getElementById('openCoverTitle').dataset.edited;
+        }
+        await loadAdminData();
+        if (!created.error && created.data) showGenerated(created.data);
+        inviteCreateStatus.textContent = created.error
+          ? 'La invitación y sus vínculos se guardaron, pero no se pudo recuperar el enlace. Está disponible en «Invitaciones».'
+          : 'Invitación creada y link asignado automáticamente a ' + people.length +
+            (people.length === 1 ? ' persona de la lista.' : ' personas de la lista.');
+      } catch (error) {
+        console.error('No se pudo crear la invitación vinculada:', error);
+        inviteCreateStatus.textContent =
+          'No se pudo confirmar la creación vinculada. Revisa que las personas sigan disponibles y vuelve a intentarlo.';
+      } finally {
+        createListBusy = false;
+        button.disabled = false;
+        renderCreateListPicker();
+      }
+    }, true);
+    renderCreateListPicker();
   }
 
   function setupDashboardStat() {
@@ -2242,6 +2538,7 @@
 
     await syncExistingWeddingLinks();
     renderWeddingLists();
+    renderCreateListPicker();
   }
 
   setupWeddingLists();
@@ -2254,6 +2551,7 @@
   };
 
   setupCreateMode();
+  setupCreateFromWeddingList();
   setupDashboardStat();
   setupFilter();
   setupInvitationSideNavigation();
