@@ -44,3 +44,74 @@ html,body{margin:0;min-height:100%;background:#f4f1ec;overflow-x:hidden;}body{fo
 .rsvp-deadline-expired{color:#945343;font-size:14px;line-height:1.5;font-weight:bold}
 .invite-deadline-notice{margin:16px auto 20px;padding:12px 16px;text-align:center;max-width:490px;color:#805f2b;font-size:14px;line-height:1.55;border:1px solid rgba(155,116,48,.2);border-radius:14px;background:#fffbf6}
 @media(max-width:430px){.rsvp-deadline-clock b{font-size:21px}.rsvp-deadline-clock small{font-size:10px}}
+
+
+/* Confirmación de asistencia: decisión explícita antes de enviar. */
+.rsvp-choice-box{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  margin:6px 0 22px;
+  padding:15px;
+  background:#fbf7f0;
+  border:1px solid rgba(159,121,58,.27);
+  border-radius:17px;
+}
+.rsvp-choice-box legend{
+  color:#94702f;
+  font-size:18px;
+  font-weight:750;
+  padding:0 6px;
+  text-align:left;
+}
+.rsvp-choice-help{font-size:13px;color:#766c5f;line-height:1.45;margin:2px 0 12px}
+.rsvp-choice-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rsvp-choice-option{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  margin:0!important;
+  padding:13px 12px;
+  cursor:pointer;
+  border-radius:13px;
+  border:1px solid rgba(138,119,83,.24);
+  background:#fffcf7;
+  transition:border-color .15s, background .15s,box-shadow .15s;
+  color:#463e33;
+}
+.rsvp-choice-option:has(input:checked){
+  background:#edf2e8;
+  border-color:#71845c;
+  box-shadow:0 0 0 2px rgba(113,132,92,.12);
+}
+.rsvp-choice-option:has(input[value="no"]:checked){
+  background:#f6eee7;
+  border-color:#b58a63;
+  box-shadow:0 0 0 2px rgba(181,138,99,.12);
+}
+.rsvp-choice-option:focus-within{outline:3px solid rgba(139,113,64,.2);outline-offset:2px}
+.rsvp-choice-option input[type="radio"]{
+  appearance:auto!important;
+  width:19px!important;
+  height:19px!important;
+  min-width:19px;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  box-shadow:none!important;
+  accent-color:#65794f;
+  flex:0 0 19px;
+}
+.rsvp-choice-label{display:block;min-width:0;line-height:1.3}
+.rsvp-choice-label strong{display:block;font-size:14px;font-weight:750}
+.rsvp-choice-label small{display:block;margin-top:4px;font-size:11px;font-weight:400;color:#827568;line-height:1.4}
+@media(max-width:440px){
+  .rsvp-choice-box{padding:12px;margin-bottom:17px}
+  .rsvp-choice-box legend{font-size:16px}
+  .rsvp-choice-options{grid-template-columns:minmax(0,1fr);gap:8px}
+  .rsvp-choice-option{padding:12px 13px}
+  .rsvp-choice-label strong{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){.rsvp-choice-option{transition:none}}
