@@ -88,8 +88,6 @@
       fields.innerHTML = `
         <div class="personalized-rsvp-title"></div>
         <p class="small-muted">Esta invitación corresponde a una persona y permite registrar como máximo un acompañante.</p>
-        <label for="extraPrincipalAttendance">¿Asistirás?</label>
-        <select id="extraPrincipalAttendance"><option value="yes">Sí, asistiré</option><option value="no">No podré asistir</option></select>
         <div id="extraPrincipalOptions">
           <label for="extraPrincipalContact">Tu WhatsApp o teléfono (opcional)</label>
           <input id="extraPrincipalContact" type="tel" placeholder="Contacto" />
@@ -107,19 +105,12 @@
     }
 
     subtitle.textContent = 'Confirma tu asistencia y, si corresponde, registra a tu acompañante.';
-    const attendance = document.getElementById('extraPrincipalAttendance');
-    const options = document.getElementById('extraPrincipalOptions');
     const withCompanion = document.getElementById('extraWithCompanion');
     const companionBox = document.getElementById('extraCompanionPerson');
-
-    function syncAttendance() {
-      const attending = attendance.value === 'yes';
-      options.classList.toggle('hidden', !attending);
-      if (!attending) { withCompanion.checked = false; companionBox.classList.add('hidden'); }
-    }
-    attendance.addEventListener('change', syncAttendance);
-    withCompanion.addEventListener('change', function () { companionBox.classList.toggle('hidden', !this.checked); });
-    syncAttendance();
+    withCompanion.addEventListener('change', function () {
+      companionBox.classList.toggle('hidden', !this.checked);
+    });
+    window.syncRsvpChoice?.();
     // El contador común también se aplica a la confirmación individual + 1.
     if (typeof window.loadRsvpDeadline === 'function') {
       await window.loadRsvpDeadline();
@@ -134,10 +125,16 @@
         status.textContent = 'El plazo para confirmar esta invitación ya finalizó.';
         return;
       }
+      const choice = window.getRsvpDecision?.();
+      if (!choice) {
+        status.textContent = 'Selecciona «Sí asistiré» o «No asistiré» antes de enviar.';
+        document.getElementById('rsvpYes')?.focus();
+        return;
+      }
       submit.disabled = true;
-      status.textContent = 'Enviando confirmación...';
+      status.textContent = 'Enviando respuesta...';
 
-      const principalAsiste = attendance.value === 'yes';
+      const principalAsiste = choice === 'yes';
       const hasCompanion = principalAsiste && withCompanion.checked;
       const companionName = hasCompanion ? document.getElementById('extraCompanionName').value.trim() : '';
       if (hasCompanion && !companionName) {
