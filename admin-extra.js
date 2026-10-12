@@ -455,6 +455,8 @@
 
   // Lista interna de invitados por novio/novia -----------------------------
   let weddingListRows = [];
+  const weddingSelectedIds = { novio: new Set(), novia: new Set() };
+  const weddingDeleteBusy = { novio: false, novia: false };
   let pendingShareConfirmation = null;
 
   style.textContent += `
@@ -475,7 +477,7 @@
     .wedding-list-card textarea{min-height:105px}
     .wedding-list-scroll{width:100%;overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:3px}
     .wedding-list-items{display:grid;gap:7px;margin-top:18px;min-width:1420px}
-    .wedding-list-table-head,.wedding-person-row{display:grid;grid-template-columns:36px minmax(230px,1fr) 145px 185px 185px 185px 310px;align-items:center;gap:10px}
+    .wedding-list-table-head,.wedding-person-row{display:grid;grid-template-columns:28px 36px minmax(230px,1fr) 145px 185px 185px 185px 310px;align-items:center;gap:10px}
     .wedding-list-table-head{padding:0 11px 7px;color:var(--admin-muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em}
     .wedding-person-row{min-width:0;padding:10px 11px;border:1px solid rgba(143,105,40,.12);background:var(--admin-surface-2);border-radius:13px}
     .wedding-person-row.is-no{background:#fbefed;border-color:rgba(151,82,72,.2)}
@@ -501,6 +503,15 @@
     .wedding-pick-row input{width:17px!important;height:17px!important;flex:0 0 17px;accent-color:var(--admin-olive)}
     .wedding-pick-row span{font-size:13px}
     .wedding-list-create-group{display:inline-block!important;width:auto!important;margin:10px 0 0!important;background:var(--admin-gold-dark)!important}
+    .wedding-list-bulk-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding:12px;border:1px solid var(--admin-line);border-radius:13px;background:var(--admin-surface-2)}
+    .wedding-select-all{display:inline-flex!important;align-items:center!important;gap:8px;margin:0!important;color:var(--admin-text)!important;font-size:13px;font-weight:700;cursor:pointer}
+    .dashboard-main .wedding-select-all input[type="checkbox"],.dashboard-main .wedding-person-selection input[type="checkbox"]{appearance:auto!important;width:18px!important;height:18px!important;min-width:18px!important;max-width:18px!important;padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;accent-color:var(--admin-olive);cursor:pointer}
+    .wedding-selection-count{color:var(--admin-muted);font-size:12px;font-weight:600;margin-right:auto}
+    .wedding-list-bulk-toolbar .mini-button{width:auto!important;min-width:0!important;margin:0!important;padding:8px 11px!important;font-size:12px!important}
+    .wedding-list-bulk-toolbar button:disabled{opacity:.48!important;cursor:not-allowed!important}
+    .wedding-person-selection{display:grid;place-items:center;min-width:0}
+    .wedding-person-row.is-selected{outline:2px solid rgba(111,122,88,.38);outline-offset:0}
+    .wedding-list-bulk-toolbar .wedding-delete-button{font-weight:750!important}
     .wedding-edit-dialog .wedding-field-row{margin:8px 0}
     @media(max-width:540px){.wedding-edit-dialog{padding:17px}.wedding-edit-actions button{flex:1 1 120px}}
     .wedding-link-state{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin-top:5px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.02em;background:#eee9df;color:#746650}
@@ -578,6 +589,7 @@
         border-radius:16px;
         box-shadow:0 3px 14px rgba(40,49,38,.045);
       }
+      .wedding-person-selection{position:absolute;top:44px;left:11px}
       .wedding-person-number{
         position:absolute;
         top:18px;
@@ -690,6 +702,7 @@
       .wedding-list-toggle{font-size:11px}
       .wedding-person-row{padding-left:30px}
       .wedding-person-number{left:9px}
+      .wedding-person-selection{left:7px}
       .wedding-send-cell{grid-template-columns:minmax(0,1fr)}
       .wedding-send-check,.wedding-send-date{grid-column:1}
     }
@@ -1316,7 +1329,13 @@
             <button class="green-button" type="button" id="addGroomNamesBtn">Agregar a lista del novio</button>
             <button class="green-button wedding-list-create-group" type="button" id="createGroomFromListBtn">Crear invitación desde la lista del novio</button>
             <p class="form-help">Selecciona una o varias personas. Si eliges varias, compartirán el mismo link y una confirmación conjunta; conviene enviarlo a un responsable del grupo. Cada WhatsApp seguirá asociado a su persona.</p>
-            <p class="status" id="groomListStatus"></p>
+            <p class="status" id="groomListStatus" role="status" aria-live="polite"></p>
+            <div class="wedding-list-bulk-toolbar">
+              <label class="wedding-select-all" for="groomSelectAll"><input type="checkbox" id="groomSelectAll" /><span>Seleccionar todos</span></label>
+              <span class="wedding-selection-count" id="groomSelectedCount" aria-live="polite">0 seleccionados</span>
+              <button class="mini-button compact-button wedding-delete-button" type="button" id="groomDeleteSelected" disabled>Eliminar seleccionados</button>
+              <button class="mini-button compact-button wedding-delete-button" type="button" id="groomDeleteAll">Eliminar todos</button>
+            </div>
             <div class="wedding-list-scroll"><div class="wedding-list-items" id="groomListItems"></div></div>
           </div>
         </article>
@@ -1339,7 +1358,13 @@
             <button class="green-button" type="button" id="addBrideNamesBtn">Agregar a lista de la novia</button>
             <button class="green-button wedding-list-create-group" type="button" id="createBrideFromListBtn">Crear invitación desde la lista de la novia</button>
             <p class="form-help">Selecciona una o varias personas. Si eliges varias, compartirán el mismo link y una confirmación conjunta; conviene enviarlo a un responsable del grupo. Cada WhatsApp seguirá asociado a su persona.</p>
-            <p class="status" id="brideListStatus"></p>
+            <p class="status" id="brideListStatus" role="status" aria-live="polite"></p>
+            <div class="wedding-list-bulk-toolbar">
+              <label class="wedding-select-all" for="brideSelectAll"><input type="checkbox" id="brideSelectAll" /><span>Seleccionar todos</span></label>
+              <span class="wedding-selection-count" id="brideSelectedCount" aria-live="polite">0 seleccionados</span>
+              <button class="mini-button compact-button wedding-delete-button" type="button" id="brideDeleteSelected" disabled>Eliminar seleccionados</button>
+              <button class="mini-button compact-button wedding-delete-button" type="button" id="brideDeleteAll">Eliminar todos</button>
+            </div>
             <div class="wedding-list-scroll"><div class="wedding-list-items" id="brideListItems"></div></div>
           </div>
         </article>
@@ -1377,6 +1402,47 @@
     });
     document.getElementById('createGroomFromListBtn').addEventListener('click', () => createInvitationFromList('novio'));
     document.getElementById('createBrideFromListBtn').addEventListener('click', () => createInvitationFromList('novia'));
+
+    for (const [side, prefix] of [['novio', 'groom'], ['novia', 'bride']]) {
+      document.getElementById(prefix + 'SelectAll').addEventListener('change', function () {
+        const selected = weddingSelectedIds[side];
+        selected.clear();
+        if (this.checked) {
+          weddingListRows.filter(row => row.lado === side).forEach(row => selected.add(row.id));
+        }
+        // Evita reconstruir la lista y perder la posición horizontal al seleccionar todos.
+        document.querySelectorAll('#' + prefix + 'ListItems .wedding-person-selection input').forEach(check => {
+          check.checked = this.checked;
+          check.closest('.wedding-person-row').classList.toggle('is-selected', this.checked);
+        });
+        updateWeddingSelectionControls(side);
+      });
+      document.getElementById(prefix + 'DeleteSelected').addEventListener('click', () => {
+        deleteWeddingRows(side, [...weddingSelectedIds[side]]);
+      });
+      document.getElementById(prefix + 'DeleteAll').addEventListener('click', () => {
+        deleteWeddingRows(side, weddingListRows.filter(row => row.lado === side).map(row => row.id));
+      });
+    }
+  }
+
+  function updateWeddingSelectionControls(side) {
+    const prefix = side === 'novio' ? 'groom' : 'bride';
+    const rows = weddingListRows.filter(row => row.lado === side);
+    const selectedCount = rows.filter(row => weddingSelectedIds[side].has(row.id)).length;
+    const all = document.getElementById(prefix + 'SelectAll');
+    if (!all) return;
+    all.checked = rows.length > 0 && selectedCount === rows.length;
+    all.indeterminate = selectedCount > 0 && selectedCount < rows.length;
+    all.disabled = weddingDeleteBusy[side] || rows.length === 0;
+    document.getElementById(prefix + 'SelectedCount').textContent =
+      selectedCount + (selectedCount === 1 ? ' seleccionado' : ' seleccionados');
+    document.getElementById(prefix + 'DeleteSelected').disabled = weddingDeleteBusy[side] || selectedCount === 0;
+    document.getElementById(prefix + 'DeleteAll').disabled = weddingDeleteBusy[side] || rows.length === 0;
+    document.querySelectorAll('#' + prefix + 'ListItems .wedding-person-selection input, #' +
+      prefix + 'ListItems .wedding-delete-button').forEach(control => {
+      control.disabled = weddingDeleteBusy[side];
+    });
   }
 
   function sideElements(side) {
@@ -1673,28 +1739,85 @@
     return true;
   }
 
-  async function deleteWeddingName(row) {
-    if (row.asistencia_estado !== 'no') return;
-    if (!confirm('¿Eliminar a "' + row.nombre + '" de la lista? Esta acción es manual y no se puede deshacer.')) return;
+  async function deleteWeddingRows(side, requestedIds) {
+    if (!['novio', 'novia'].includes(side) || weddingDeleteBusy[side]) return;
+    const requested = new Set(requestedIds);
+    const people = weddingListRows.filter(row => row.lado === side && requested.has(row.id));
+    if (!people.length) return;
 
-    const result = await client.from('lista_novios').delete().eq('id', row.id);
-    if (result.error) {
-      console.error(result.error);
-      alert('No se pudo eliminar el nombre.');
-      return;
+    const sideLabel = side === 'novio' ? 'del novio' : 'de la novia';
+    const isAll = people.length === weddingListRows.filter(row => row.lado === side).length;
+    const linked = people.filter(row => !!row.invitacion_id).length;
+    const modal = weddingDialog(
+      isAll ? '¿Eliminar toda la lista ' + sideLabel + '?' : '¿Eliminar ' + people.length + ' de la lista ' + sideLabel + '?',
+      'Esta acción elimina ' + (people.length === 1 ? 'el registro seleccionado' : 'los registros seleccionados') +
+      ' de la lista ' + sideLabel + ' y no se puede deshacer. ' +
+      'Las invitaciones, enlaces y confirmaciones existentes se conservarán.'
+    );
+    if (people.length <= 5) {
+      const names = document.createElement('p');
+      names.className = 'wedding-delete-summary';
+      names.textContent = people.map(row => row.nombre).join(' · ');
+      modal.body.appendChild(names);
     }
-
-    const sharedRows = row.invitacion_id
-      ? weddingListRows.filter(other => other.id !== row.id && other.invitacion_id === row.invitacion_id)
-      : [];
-
-    if (row.invitacion_id && !sharedRows.length) {
-      await client.from('invitaciones_personalizadas')
-        .update({ activa: false, updated_at: new Date().toISOString() })
-        .eq('id', row.invitacion_id);
+    if (linked) {
+      const note = document.createElement('p');
+      note.textContent = linked + (linked === 1
+        ? ' persona tiene un link asociado; ese link no se desactivará.'
+        : ' personas tienen links asociados; esos links no se desactivarán.');
+      modal.body.appendChild(note);
     }
+    modal.submit.textContent = 'Eliminar ' + people.length + (people.length === 1 ? ' persona' : ' personas');
+    modal.submit.className = 'mini-button compact-button wedding-delete-button wedding-confirm-delete';
+    modal.cancel.onclick = () => modal.overlay.remove();
+    modal.submit.onclick = async () => {
+      if (weddingDeleteBusy[side]) return;
+      weddingDeleteBusy[side] = true;
+      modal.cancel.disabled = true;
+      modal.submit.disabled = true;
+      updateWeddingSelectionControls(side);
+      let deleted = 0;
+      let failure = null;
+      const ids = people.map(row => row.id);
+      try {
+        // PostgREST aplica la eliminación de cada lote de forma atómica.
+        // Limitar los IDs por solicitud evita URLs excesivas si la lista es extensa.
+        for (let start = 0; start < ids.length; start += 100) {
+          const batch = ids.slice(start, start + 100);
+          const result = await client.from('lista_novios')
+            .delete().eq('lado', side).in('id', batch).select('id');
+          if (result.error) throw result.error;
+          deleted += (result.data || []).length;
+          if ((result.data || []).length !== batch.length) {
+            throw new Error('Algunos registros ya no estaban disponibles. Se actualizó la lista.');
+          }
+        }
+      } catch (error) {
+        console.error('Error al eliminar invitados de la lista:', error);
+        failure = error;
+      } finally {
+        weddingDeleteBusy[side] = false;
+        for (const id of ids) weddingSelectedIds[side].delete(id);
+        try {
+          await loadAdminData();
+        } catch (error) {
+          console.error('No se pudo actualizar la lista tras la eliminación:', error);
+          failure = failure || error;
+        }
+        modal.overlay.remove();
+        const status = sideElements(side).status;
+        if (status) {
+          status.textContent = failure
+            ? 'Se eliminaron ' + deleted + ' de ' + people.length + ' registros. Revisa la lista y vuelve a seleccionar los pendientes.'
+            : 'Se eliminaron ' + deleted + (deleted === 1 ? ' persona de la lista ' : ' personas de la lista ') + sideLabel + '.';
+        }
+        updateWeddingSelectionControls(side);
+      }
+    };
+  }
 
-    await loadAdminData();
+  function deleteWeddingName(row) {
+    deleteWeddingRows(row.lado, [row.id]);
   }
 
   async function updateWeddingAttendance(row, value, select) {
@@ -1854,7 +1977,7 @@
 
     const head = document.createElement('div');
     head.className = 'wedding-list-table-head';
-    ['N°', 'Nombre / WhatsApp / link / próximo envío', 'Asistirá', '1 · Invitación', '2 · Recordatorio', '3 · Itinerario', 'Link y acciones'].forEach(text => {
+    ['', 'N°', 'Nombre / WhatsApp / link / próximo envío', 'Asistirá', '1 · Invitación', '2 · Recordatorio', '3 · Itinerario', 'Link y acciones'].forEach(text => {
       const cell = document.createElement('span');
       cell.textContent = text;
       head.appendChild(cell);
@@ -1864,7 +1987,23 @@
     rows.forEach((row, index) => {
       const state = row.asistencia_estado || 'por_confirmar';
       const item = document.createElement('div');
-      item.className = 'wedding-person-row' + (state === 'si' ? ' is-yes' : state === 'no' ? ' is-no' : '');
+      item.className = 'wedding-person-row' + (state === 'si' ? ' is-yes' : state === 'no' ? ' is-no' : '') +
+        (weddingSelectedIds[side].has(row.id) ? ' is-selected' : '');
+
+      const selectionLabel = document.createElement('label');
+      selectionLabel.className = 'wedding-person-selection';
+      selectionLabel.title = 'Seleccionar a ' + (row.nombre || 'invitado') + ' para eliminar';
+      const selection = document.createElement('input');
+      selection.type = 'checkbox';
+      selection.checked = weddingSelectedIds[side].has(row.id);
+      selection.setAttribute('aria-label', selectionLabel.title);
+      selection.addEventListener('change', function () {
+        if (this.checked) weddingSelectedIds[side].add(row.id);
+        else weddingSelectedIds[side].delete(row.id);
+        item.classList.toggle('is-selected', this.checked);
+        updateWeddingSelectionControls(side);
+      });
+      selectionLabel.appendChild(selection);
 
       const number = document.createElement('span');
       number.className = 'wedding-person-number';
@@ -1977,19 +2116,18 @@
       edit.addEventListener('click', () => editWeddingGuest(row));
       actions.appendChild(edit);
 
-      if (state === 'no') {
-        const del = document.createElement('button');
-        del.className = 'mini-button compact-button wedding-delete-button';
-        del.type = 'button';
-        del.textContent = 'Eliminar';
-        del.title = 'Disponible porque esta persona indicó que no asistirá';
-        del.addEventListener('click', () => deleteWeddingName(row));
-        actions.appendChild(del);
-      }
+      const del = document.createElement('button');
+      del.className = 'mini-button compact-button wedding-delete-button';
+      del.type = 'button';
+      del.textContent = 'Eliminar';
+      del.title = 'Eliminar este registro de la lista';
+      del.addEventListener('click', () => deleteWeddingName(row));
+      actions.appendChild(del);
 
-      item.append(number, nameBox, attendance, send1, send2, send3, actions);
+      item.append(selectionLabel, number, nameBox, attendance, send1, send2, send3, actions);
       container.appendChild(item);
     });
+    updateWeddingSelectionControls(side);
   }
 
   function renderWeddingLists() {
@@ -2024,6 +2162,8 @@
 
     renderWeddingSide('novio', 'groomListItems');
     renderWeddingSide('novia', 'brideListItems');
+    updateWeddingSelectionControls('novio');
+    updateWeddingSelectionControls('novia');
   }
 
   async function syncExistingWeddingLinks() {
@@ -2086,6 +2226,13 @@
     }
 
     weddingListRows = result.data || [];
+    // Evita conservar selecciones de registros eliminados o movidos entre listas.
+    for (const side of ['novio', 'novia']) {
+      const visibleIds = new Set(weddingListRows.filter(row => row.lado === side).map(row => row.id));
+      for (const id of weddingSelectedIds[side]) {
+        if (!visibleIds.has(id)) weddingSelectedIds[side].delete(id);
+      }
+    }
     weddingListRows.forEach(row => {
       if (!row.asistencia_estado) row.asistencia_estado = 'por_confirmar';
       if (typeof row.envio_1_enviado !== 'boolean') row.envio_1_enviado = !!row.invitacion_enviada;
