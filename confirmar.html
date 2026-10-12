@@ -15,21 +15,32 @@
       <p class="sub" id="rsvpSubtitle">Completa los datos de tu grupo.</p>
 
       <form id="rsvpForm">
+        <fieldset class="rsvp-choice-box" id="rsvpDecisionGroup">
+          <legend>¿Asistirás a nuestra boda?</legend>
+          <p class="rsvp-choice-help">Selecciona una opción para registrar tu respuesta.</p>
+          <div class="rsvp-choice-options">
+            <label class="rsvp-choice-option" for="rsvpYes">
+              <input id="rsvpYes" name="rsvpDecision" type="radio" value="yes" required />
+              <span class="rsvp-choice-label"><strong>Sí asistiré</strong><small>¡Nos vemos en la celebración!</small></span>
+            </label>
+            <label class="rsvp-choice-option" for="rsvpNo">
+              <input id="rsvpNo" name="rsvpDecision" type="radio" value="no" required />
+              <span class="rsvp-choice-label"><strong>No asistiré</strong><small>Gracias por avisarnos.</small></span>
+            </label>
+          </div>
+        </fieldset>
+
         <div id="closedInviteFields" class="hidden">
           <div id="closedInviteTitle" class="personalized-rsvp-title"></div>
-          <p class="small-muted">Marca quiénes asistirán. Esta invitación solo permite registrar a las personas incluidas por los novios.</p>
-          <div id="closedMembers" class="members-box"></div>
+          <div id="closedParticipantsDetails" class="hidden">
+            <p class="small-muted">Marca quiénes asistirán. Esta invitación solo permite registrar a las personas incluidas por los novios.</p>
+            <div id="closedMembers" class="members-box"></div>
+          </div>
         </div>
 
         <div id="openFamilyFields" class="hidden">
           <div id="openFamilyTitle" class="personalized-rsvp-title"></div>
           <p class="small-muted">Esta invitación permite que la familia registre libremente quiénes asistirán.</p>
-
-          <label for="openAttendance">¿Asistirán?</label>
-          <select id="openAttendance">
-            <option value="yes">Sí, asistiremos</option>
-            <option value="no">No podremos asistir</option>
-          </select>
 
           <div id="openMembersBox" class="members-box"></div>
           <button class="mini-button" type="button" id="addOpenMemberBtn">Agregar otra persona</button>
@@ -38,12 +49,6 @@
         <div id="generalFields" class="hidden">
           <label for="confirmante">Familia de quien confirma</label>
           <input id="confirmante" name="confirmante" type="text" placeholder="Ejemplo: Familia Morales Sandoval" />
-
-          <label for="generalAttendance">¿Asistirán?</label>
-          <select id="generalAttendance">
-            <option value="yes">Sí, asistiremos</option>
-            <option value="no">No podremos asistir</option>
-          </select>
 
           <div id="generalMembersBox" class="members-box"></div>
           <button class="mini-button" type="button" id="addGeneralMemberBtn">Agregar otra persona</button>
@@ -69,7 +74,7 @@
           Tu respuesta nos ayudará a organizar este día tan especial. Si no recibimos tu confirmación, entenderemos que no podrás acompañarnos y podremos ofrecer tu lugar a otra persona. Por este motivo, no realizaremos una nueva solicitud de confirmación.
         </p>
 
-        <button class="green-button" type="submit" id="submitRsvpBtn">Enviar confirmación</button>
+        <button class="green-button" type="submit" id="submitRsvpBtn">Enviar</button>
         <p class="status" id="status"></p>
       </form>
 
@@ -170,20 +175,30 @@
       });
     }
 
-    function toggleOpenAttendance() {
-      const attending = document.getElementById("openAttendance").value === "yes";
+    function getRsvpDecision() {
+      return form.querySelector('input[name="rsvpDecision"]:checked')?.value || null;
+    }
+    window.getRsvpDecision = getRsvpDecision;
+
+    function syncRsvpChoice() {
+      const attending = getRsvpDecision() === "yes";
+      document.getElementById("closedParticipantsDetails").classList.toggle("hidden", !attending);
       openMembersBox.classList.toggle("hidden", !attending);
       document.getElementById("addOpenMemberBtn").classList.toggle("hidden", !attending);
-    }
-
-    function toggleGeneralAttendance() {
-      const attending = document.getElementById("generalAttendance").value === "yes";
       generalMembersBox.classList.toggle("hidden", !attending);
       document.getElementById("addGeneralMemberBtn").classList.toggle("hidden", !attending);
+      // Companion fields are attached by invitation-extra.js after loading.
+      document.getElementById("extraPrincipalOptions")?.classList.toggle("hidden", !attending);
+      if (!attending) {
+        const companion = document.getElementById("extraWithCompanion");
+        if (companion) companion.checked = false;
+        document.getElementById("extraCompanionPerson")?.classList.add("hidden");
+      }
     }
+    window.syncRsvpChoice = syncRsvpChoice;
+    form.querySelectorAll('input[name="rsvpDecision"]').forEach(input =>
+      input.addEventListener("change", syncRsvpChoice));
 
-    document.getElementById("openAttendance").addEventListener("change", toggleOpenAttendance);
-    document.getElementById("generalAttendance").addEventListener("change", toggleGeneralAttendance);
     document.getElementById("addOpenMemberBtn").addEventListener("click", () => addFreeMember(openMembersBox, "open", nextOpenIndex));
     document.getElementById("addGeneralMemberBtn").addEventListener("click", () => addFreeMember(generalMembersBox, "general", nextGeneralIndex));
 
@@ -299,7 +314,7 @@
       if (!inviteToken) {
         generalFields.classList.remove("hidden");
         addFreeMember(generalMembersBox, "general", nextGeneralIndex);
-        toggleGeneralAttendance();
+        syncRsvpChoice();
         return;
       }
 
@@ -319,12 +334,13 @@
         document.getElementById("openFamilyTitle").textContent = invitation.titulo_portada || ("Invitación para la " + invitation.familia);
         document.getElementById("rsvpSubtitle").textContent = "Registra las personas de tu familia que asistirán.";
         addFreeMember(openMembersBox, "open", nextOpenIndex);
-        toggleOpenAttendance();
+        syncRsvpChoice();
       } else {
         closedInviteFields.classList.remove("hidden");
         document.getElementById("closedInviteTitle").textContent = invitation.titulo_portada || ("Para " + formatInviteNames(invitation.invitados || []));
         document.getElementById("rsvpSubtitle").textContent = "Confirma la asistencia de las personas incluidas en esta invitación.";
         renderClosedMembers(invitation.invitados || []);
+        syncRsvpChoice();
       }
       statusText.textContent = "";
       submitRsvpBtn.disabled = false;
@@ -334,12 +350,25 @@
     form.addEventListener("submit", async function(event){
       event.preventDefault();
       if (!supabaseClient || rsvpDeadlineExpired) return;
+      const decision = getRsvpDecision();
+      if (!decision) {
+        statusText.textContent = "Selecciona «Sí asistiré» o «No asistiré» antes de enviar.";
+        document.getElementById("rsvpYes").focus();
+        return;
+      }
       submitRsvpBtn.disabled = true;
-      statusText.textContent = "Enviando confirmación...";
+      statusText.textContent = "Enviando respuesta...";
       const message = document.getElementById("mensaje").value.trim();
 
       if (inviteToken && personalizedInvite?.tipo === "lista_cerrada") {
-        const asistentes = Array.from(document.querySelectorAll('input[name="closed_asiste"]:checked')).map(i => i.value);
+        const asistentes = decision === "yes"
+          ? Array.from(document.querySelectorAll('input[name="closed_asiste"]:checked')).map(i => i.value)
+          : [];
+        if (decision === "yes" && !asistentes.length) {
+          statusText.textContent = "Selecciona al menos una persona que asistirá, o marca «No asistiré».";
+          submitRsvpBtn.disabled = false;
+          return;
+        }
         const contactos = {};
         document.querySelectorAll(".closed-contact").forEach(i => contactos[i.dataset.name] = i.value.trim());
         const result = await supabaseClient.rpc("confirmar_invitacion_personalizada", { p_token:inviteToken, p_asistentes:asistentes, p_contactos:contactos, p_mensaje:message });
@@ -349,7 +378,7 @@
       }
 
       if (inviteToken && personalizedInvite?.tipo === "familia_libre") {
-        const attending = document.getElementById("openAttendance").value === "yes";
+        const attending = decision === "yes";
         const data = attending ? collectFreeMembers("open") : {names:[],contacts:{}};
         if (attending && !data.names.length) { statusText.textContent = "Agrega al menos una persona que asistirá."; submitRsvpBtn.disabled = false; return; }
         const result = await supabaseClient.rpc("confirmar_invitacion_familia_libre", { p_token:inviteToken, p_nombres:data.names, p_contactos:data.contacts, p_mensaje:message });
@@ -359,7 +388,7 @@
       }
 
       const family = document.getElementById("confirmante").value.trim();
-      const attending = document.getElementById("generalAttendance").value === "yes";
+      const attending = decision === "yes";
       const data = attending ? collectFreeMembers("general") : {names:[family],contacts:{}};
       if (!family) { statusText.textContent = "Indica el nombre de la familia."; submitRsvpBtn.disabled = false; return; }
       if (attending && !data.names.length) { statusText.textContent = "Agrega al menos una persona."; submitRsvpBtn.disabled = false; return; }
