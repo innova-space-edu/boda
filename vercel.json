@@ -3,7 +3,8 @@
   "git": {
     "deploymentEnabled": {
       "admin-eliminar-confirmaciones": false,
-      "admin-asistencia-por-lado": false
+      "admin-asistencia-por-lado": false,
+      "admin-quitar-invitados": false
     }
   }
 }

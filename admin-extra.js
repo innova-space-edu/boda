@@ -879,6 +879,30 @@
     return {section,visible:current==='all'?rows:rows.filter(g=>attendanceState(g)===current)};
   }
 
+
+  async function removeGuestEverywhere(g,button){
+    const inv=allInvites.find(i=>i.id===g.invitacion_id);
+    if(g.invitacion_id&&!inv){alert('Actualiza los datos antes de quitar.');return;}
+    const row=g._weddingRow||weddingListRows.find(r=>r.id===g._manualListId);
+    let scope,target;
+    if(g._familyUnit&&inv?.tipo==='familia_libre'){scope='invite_family';target=inv.id;}
+    else if(row){scope='list';target=row.id;}
+    else if(!g._pending){scope='guest';target=g.id;}
+    else if(inv){scope='invite_member';target=inv.id;}
+    else {alert('No se encontró el registro. Actualiza los datos.');return;}
+    const normalized=normalizeWeddingName(g.nombre);
+    const removesLink=inv&&(scope==='invite_family'||(inv.tipo==='individual_acompanante'&&normalized===normalizeWeddingName(inv.invitados?.[0]))||(inv.tipo==='lista_cerrada'&&(inv.invitados||[]).every(n=>normalizeWeddingName(n)===normalized)));
+    const duplicate=scope==='list'&&inv?weddingListRows.some(r=>r.id!==target&&r.invitacion_id===inv.id&&normalizeWeddingName(r.nombre)===normalized):scope==='guest'&&inv?allGuests.some(r=>!r._manualListId&&r.id!==target&&r.invitacion_id===inv.id&&normalizeWeddingName(r.nombre)===normalized):false;
+    const description=duplicate?'¿Quitar este registro duplicado de '+g.nombre+'? Se conservará el otro registro vinculado.':'¿Quitar definitivamente a '+g.nombre+' de todos lados? Se eliminará su registro de la lista de novios, asistencia y confirmaciones vinculadas. '+(removesLink?'También se eliminará su enlace de invitación y los integrantes dependientes, si existen.':'Los demás invitados y sus enlaces se conservarán.')+' Esta acción no se puede deshacer.';
+    if(!confirm(description))return;
+    button.disabled=true;
+    try{
+      const result=await client.rpc('admin_quitar_invitado',{p_scope:scope,p_target:target,p_nombre:g.nombre,p_invitacion_id:inv?.id||null,p_version:inv?.updated_at||null});
+      if(result.error)throw result.error;
+      await loadAdminData();
+    }catch(error){console.error(error);alert(error.message||'No se pudo quitar el invitado.');button.disabled=false;}
+  }
+
   function patchAttendanceDeletionRenderers() {
     const css=document.createElement('style');
     css.textContent=`
@@ -889,6 +913,7 @@
       .attendance-side-metric strong{font-size:25px;line-height:1}.attendance-side-metric span{font-size:12px;font-weight:650}.attendance-side-metric small{font-size:11px}
       .attendance-side-metric.selected{border-color:var(--admin-olive,#797b5a);box-shadow:inset 0 0 0 1px var(--admin-olive,#797b5a)}
       .attendance-side-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:#70685e}
+      .attendance-row-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.attendance-row-actions .mini-button{width:auto!important;margin:0!important;min-width:0!important}.attendance-row-actions button:disabled{opacity:.45;cursor:not-allowed}
       .attendance-side-panel .family-card{margin:10px 0}.attendance-side-panel .admin-table-wrap{overflow-x:auto}
       @media(max-width:480px){.attendance-side-panel{padding:10px}.attendance-side-metric{padding:9px 6px}.attendance-side-metric strong{font-size:20px}}
     `;document.head.append(css);
@@ -913,9 +938,17 @@
       }
     }
     function rowAction(g){
-      if(!g._pending)return deleteAttendanceButton('Eliminar',b=>removeAttendance(g,false,b));
-      if(!g.invitacion_id&&!g._weddingRow)return '-';
-      const b=document.createElement('button');b.type='button';b.className='mini-button compact-button';b.textContent='Confirmar';b.onclick=()=>editPending(g);return b;
+      const actions=document.createElement('div');actions.className='attendance-row-actions';
+      if(g._pending){
+        if(g.invitacion_id||g._weddingRow){const b=document.createElement('button');b.type='button';b.className='mini-button compact-button';b.textContent='Confirmar';b.onclick=()=>editPending(g);actions.append(b);}
+      }
+      const clear=deleteAttendanceButton('Eliminar',b=>removeAttendance(g,false,b));
+      clear.title='Eliminar únicamente la confirmación, conservando al invitado';
+      if(g._pending){clear.disabled=true;clear.title='Todavía no existe una confirmación que eliminar';}
+      actions.append(clear);
+      const remove=deleteAttendanceButton('Quitar de todos lados',b=>removeGuestEverywhere(g,b));
+      remove.title='Quitar permanentemente al invitado y sus registros vinculados';
+      actions.append(remove);return actions;
     }
     function groupKey(g){return g.invitacion_id?'invite:'+g.invitacion_id:g._pending?'pending:'+g.id:confirmationGroupKey(g);}
     function renderSideGroups(container,side,rows){
@@ -934,7 +967,7 @@
         title.append(h,p);header.append(title);
         const response=guests.find(g=>!g._pending);
         if(response)header.append(deleteAttendanceButton('Eliminar confirmación',b=>removeAttendance(response,true,b)));
-        else header.append(rowAction(first));
+        else if(guests.length>1&&first.invitacion_id){const b=document.createElement('button');b.type='button';b.className='mini-button compact-button';b.textContent='Confirmar invitación';b.onclick=()=>editPending(first);header.append(b);}
         card.append(header);
         const table=document.createElement('table');table.className='mini-table';
         const head=document.createElement('thead'),tr=document.createElement('tr');
