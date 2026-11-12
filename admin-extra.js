@@ -653,6 +653,130 @@
     }
   }
 
+
+  // A single editor for all invitation modes. The database saves the response,
+  // invitation state and wedding list in one transaction.
+  function openAttendanceEditor(invite, overrideRow, overrideState) {
+    const previous = allGuests.filter(g => g.invitacion_id === invite.id);
+    const linked = weddingListRows.filter(r => r.invitacion_id === invite.id);
+    const key = name => String(name || '').trim().toLowerCase();
+    const stateOf = g => g?.asistencia === 'Sí asistiré' ? 'si' : g?.asistencia === 'No podré asistir' ? 'no' : 'por_confirmar';
+    const match = name => previous.find(g => key(g.nombre) === key(name));
+    const listMatch = name => linked.find(g => key(g.nombre) === key(name));
+    const stateFor = name => overrideRow && key(overrideRow.nombre) === key(name)
+      ? overrideState : match(name) ? stateOf(match(name)) : listMatch(name)?.asistencia_estado || 'por_confirmar';
+    const contactFor = name => match(name)?.contacto_integrante || match(name)?.telefono || listMatch(name)?.whatsapp || '';
+    const dialog = document.createElement('dialog');
+    dialog.className = 'admin-attendance-dialog';
+    dialog.style.cssText = 'width:min(620px,92vw);max-height:85vh;overflow:auto;border:1px solid #ddd;border-radius:18px;padding:22px;background:white;color:#332e29;box-shadow:0 18px 60px #0003';
+    const form = document.createElement('form'); form.style.cssText = 'display:grid;gap:14px';
+    const title = document.createElement('h2'); title.textContent = 'Editar asistencia';
+    const subtitle = document.createElement('p'); subtitle.textContent = invitationDisplayTitle(invite);
+    const note = document.createElement('p'); note.className = 'small-muted';
+    note.textContent = 'Registra la respuesta recibida por teléfono o en persona. Se actualizarán todos los recuentos. Puedes corregirla incluso después del plazo.';
+    form.append(title,subtitle,note);
+    const fields = document.createElement('div'); fields.style.cssText = 'display:grid;gap:12px'; form.append(fields);
+    const makeInput = (labelText,value,type='text') => {
+      const label=document.createElement('label'); label.style.cssText='display:grid;gap:5px';
+      label.append(document.createTextNode(labelText));
+      const input=document.createElement('input'); input.type=type; input.value=value||''; label.append(input);
+      return {label,input};
+    };
+    const makeSelect = value => {
+      const select=document.createElement('select');
+      [['por_confirmar','Por confirmar'],['si','Sí asistiré'],['no','No asistiré']].forEach(([v,t])=>{
+        const option=document.createElement('option');option.value=v;option.textContent=t;select.append(option);
+      }); select.value=value||'por_confirmar'; return select;
+    };
+    const memberRows=[];
+    function member(name, state, contact, free=false, parent=fields) {
+      const block=document.createElement('div'); block.style.cssText='display:grid;gap:7px;padding:10px;border:1px solid #dedbd6;border-radius:10px';
+      let nameInput;
+      if (free) { const n=makeInput('Nombre y apellido',name);nameInput=n.input;block.append(n.label); }
+      else {const strong=document.createElement('strong');strong.textContent=name;block.append(strong);}
+      const choice=free ? null : makeSelect(state);
+      if(choice) block.append(choice);
+      const phone=makeInput('WhatsApp o teléfono (opcional)',contact,'tel');block.append(phone.label);
+      const item={name,nameInput,choice,phone:phone.input,block};memberRows.push(item);
+      if(free){const remove=document.createElement('button');remove.type='button';remove.className='mini-button';remove.textContent='Quitar persona';remove.onclick=()=>{memberRows.splice(memberRows.indexOf(item),1);block.remove();};block.append(remove);}
+      parent.append(block);return item;
+    }
+    let familyChoice, companionName, companionPhone, principal;
+    if(invite.tipo==='lista_cerrada'){
+      (invite.invitados||[]).forEach(name=>member(name,stateFor(name),contactFor(name)));
+    }else if(invite.tipo==='familia_libre'){
+      const yes=previous.filter(g=>stateOf(g)==='si');
+      const state=overrideRow ? overrideState : yes.length ? 'si' : previous.some(g=>stateOf(g)==='no') ? 'no' : linked.find(r=>r.asistencia_estado!=='por_confirmar')?.asistencia_estado || 'por_confirmar';
+      familyChoice=makeSelect(state);fields.append(familyChoice);
+      const people=document.createElement('div');people.style.cssText='display:grid;gap:8px';
+      yes.forEach(g=>member(g.nombre,'si',g.contacto_integrante||g.telefono,true,people));
+      if(!yes.length) member('','si','',true,people);
+      const add=document.createElement('button');add.type='button';add.className='mini-button';add.textContent='+ Agregar asistente';add.onclick=()=>member('','si','',true,people);
+      fields.append(people,add);
+      const sync=()=>{people.hidden=familyChoice.value!=='si';people.style.display=people.hidden?'none':'grid';add.hidden=people.hidden;};familyChoice.onchange=sync;sync();
+    }else if(invite.tipo==='individual_acompanante'){
+      const name=(invite.invitados||[])[0];
+      principal=member(name,stateFor(name),contactFor(name));
+      const companion=previous.find(g=>key(g.nombre)!==key(name)&&stateOf(g)==='si');
+      const n=makeInput('Acompañante (opcional)',companion?.nombre||'');
+      const p=makeInput('Contacto del acompañante (opcional)',companion?.contacto_integrante||companion?.telefono||'','tel');
+      companionName=n.input;companionPhone=p.input;
+      const box=document.createElement('div');box.style.cssText='display:grid;gap:8px';box.append(n.label,p.label);fields.append(box);
+      const sync=()=>{box.style.display=principal.choice.value==='si'?'grid':'none';};principal.choice.onchange=sync;sync();
+    }else{return;}
+    const msg=makeInput('Mensaje (opcional)',previous.find(g=>g.mensaje)?.mensaje||'');form.append(msg.label);
+    const status=document.createElement('p');status.setAttribute('role','status');status.className='small-muted';form.append(status);
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;flex-wrap:wrap';
+    const cancel=document.createElement('button');cancel.type='button';cancel.className='mini-button';cancel.textContent='Cancelar';cancel.onclick=()=>dialog.close();
+    const save=document.createElement('button');save.type='submit';save.className='green-button';save.textContent='Guardar asistencia';
+    actions.append(cancel,save);form.append(actions);dialog.append(form);document.body.append(dialog);
+    let saving=false;dialog.addEventListener('cancel',e=>{if(saving)e.preventDefault();});
+    dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+    form.onsubmit=async event=>{
+      event.preventDefault();if(saving)return;
+      let people=[];
+      const itemFor=(r)=>({nombre:r.nameInput?r.nameInput.value.trim():r.name,estado:r.choice?r.choice.value:'si',contacto:r.phone.value.trim()});
+      if(invite.tipo==='familia_libre'){
+        if(familyChoice.value==='no') people=[{nombre:invite.familia,estado:'no',contacto:previous.find(g=>stateOf(g)==='no')?.contacto_integrante||''}];
+        if(familyChoice.value==='si'){
+          people=memberRows.map(itemFor).filter(r=>r.nombre);
+          if(!people.length){status.textContent='Agrega al menos un asistente con nombre.';return;}
+        }
+      }else{
+        people=memberRows.map(itemFor).filter(r=>r.estado!=='por_confirmar');
+        if(principal?.choice.value==='si'&&companionName.value.trim())people.push({nombre:companionName.value.trim(),estado:'si',contacto:companionPhone.value.trim()});
+      }
+      if(new Set(people.map(r=>key(r.nombre))).size!==people.length){status.textContent='No se puede repetir un nombre.';return;}
+      if(!people.length&&previous.some(g=>!g._manualListId)&&!confirm('¿Dejar toda esta invitación por confirmar?'))return;
+      saving=true;save.disabled=true;cancel.disabled=true;status.textContent='Guardando...';
+      try{
+        const result=await client.rpc('admin_guardar_asistencia',{p_invitacion_id:invite.id,p_personas:people,p_mensaje:msg.input.value.trim(),p_version:invite.updated_at});
+        if(result.error) throw result.error;
+        dialog.close();await loadAdminData();
+      }catch(error){console.error(error);status.textContent=error.message||'No se pudo guardar. Intenta nuevamente.';saving=false;save.disabled=false;cancel.disabled=false;}
+    };
+    dialog.showModal();
+  }
+
+  function mergeManualAttendance() {
+    // The wedding list is authoritative for entries without a recorded RSVP.
+    // Once an RSVP exists for the same invitation/person, only the RSVP counts.
+    const actual=allGuests.filter(g=>!g._manualListId);
+    const combined=actual.slice();
+    for(const row of weddingListRows){
+      if(!['si','no'].includes(row.asistencia_estado))continue;
+      const inv=weddingInviteFor(row);
+      const nameKey=normalizeWeddingName(row.nombre);
+      const recorded=inv
+        ? actual.some(g=>g.invitacion_id===inv.id&&(inv.tipo==='familia_libre'||normalizeWeddingName(g.nombre)===nameKey))
+        : actual.some(g=>!g.invitacion_id&&normalizeWeddingName(g.nombre)===nameKey);
+      if(recorded || inv?.respondida_at)continue;
+      if(combined.some(g=>g._manualListId && (inv ? g.invitacion_id===inv.id && (inv.tipo==='familia_libre'||normalizeWeddingName(g.nombre)===nameKey) : !g.invitacion_id && normalizeWeddingName(g.nombre)===nameKey)))continue;
+      combined.push({id:row.id,_manualListId:row.id,nombre:row.nombre,asistencia:row.asistencia_estado==='si'?'Sí asistiré':'No podré asistir',cantidad:1,confirmante:inv?invitationDisplayTitle(inv):row.nombre,grupo_id:inv?.id||('manual:'+row.id),invitacion_id:inv?.id||null,telefono:row.whatsapp||'',mensaje:'Confirmación manual',created_at:row.updated_at});
+    }
+    allGuests=combined;
+  }
+
   function patchRenderers() {
     renderInvites = function () {
       const container = document.getElementById('personalInvitesList');
@@ -673,7 +797,7 @@
         const h3 = document.createElement('h3'); h3.textContent = invite.titulo_portada || invite.familia || formatNames(invite.invitados || []); info.appendChild(h3);
         const badge = document.createElement('span'); badge.className = 'type-badge ' + invite.tipo; badge.textContent = typeLabels[invite.tipo] || invite.tipo; info.appendChild(badge);
         top.appendChild(info);
-        const state = document.createElement('span'); state.className = 'response-badge ' + (invite.respondida_at ? 'answered' : 'pending'); state.textContent = invite.respondida_at ? 'Respondida' : 'Sin respuesta'; top.appendChild(state);
+        const state = document.createElement('span'); state.className = 'response-badge ' + (invite.respondida_at ? 'answered' : 'pending'); state.textContent = invite.respondida_at ? 'Respondida' : allGuests.some(g=>g.invitacion_id===invite.id) ? 'Respuesta parcial' : 'Sin respuesta'; top.appendChild(state);
         card.appendChild(top);
 
         const detail = document.createElement('p'); detail.className = 'small-muted';
@@ -686,6 +810,7 @@
         const input = document.createElement('input'); input.readOnly = true; input.value = invitationUrl(invite.token); card.appendChild(input);
         const actions = document.createElement('div'); actions.className = 'invite-card-actions';
         addDeadlineSettings(card, invite);
+        const attendanceEdit=document.createElement('button');attendanceEdit.type='button';attendanceEdit.className='mini-button compact-button';attendanceEdit.textContent='Editar asistencia';attendanceEdit.onclick=()=>openAttendanceEditor(invite);actions.appendChild(attendanceEdit);
         const copy = document.createElement('button'); copy.className='mini-button compact-button'; copy.textContent='Copiar link'; copy.onclick=()=>shareInvitation('copy',input.value,h3.textContent,null,copy); actions.appendChild(copy);
         const whatsapp = document.createElement('button'); whatsapp.className='mini-button compact-button'; whatsapp.textContent='WhatsApp'; whatsapp.onclick=()=>shareInvitation('whatsapp',input.value,h3.textContent); actions.appendChild(whatsapp);
         const share = document.createElement('button'); share.className='mini-button compact-button'; share.textContent='Compartir'; share.onclick=()=>shareInvitation('native',input.value,h3.textContent); actions.appendChild(share);
@@ -2122,23 +2247,17 @@
   }
 
   async function updateWeddingAttendance(row, value, select) {
-    select.disabled = true;
-    const previous = row.asistencia_estado || 'por_confirmar';
-    const result = await client
-      .from('lista_novios')
-      .update({ asistencia_estado: value, updated_at: new Date().toISOString() })
-      .eq('id', row.id);
-
-    if (result.error) {
-      console.error(result.error);
-      select.value = previous;
-      select.disabled = false;
-      alert('No se pudo actualizar la confirmación.');
+    const previous=row.asistencia_estado||'por_confirmar';
+    const invite=weddingInviteFor(row);
+    if(invite){
+      select.value=previous;
+      openAttendanceEditor(invite,row,value);
       return;
     }
-
-    row.asistencia_estado = value;
-    renderWeddingLists();
+    select.disabled=true;
+    const result=await client.from('lista_novios').update({asistencia_estado:value,updated_at:new Date().toISOString()}).eq('id',row.id).select('id').single();
+    if(result.error){console.error(result.error);select.value=previous;select.disabled=false;alert('No se pudo actualizar la confirmación.');return;}
+    await loadAdminData();
   }
 
   async function updateWeddingSend(row, stage, checked, checkbox) {
@@ -2553,6 +2672,9 @@
   loadAdminData = async function () {
     await loadAdminDataBase();
     await loadWeddingLists();
+    mergeManualAttendance();
+    renderDashboard(Number(document.getElementById('visitasCount').textContent)||0);
+    renderFamilies();renderGuests();
   };
 
   setupCreateMode();
