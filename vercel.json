@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "admin-eliminar-confirmaciones": false
+      "admin-eliminar-confirmaciones": false,
+      "admin-asistencia-por-lado": false
     }
   }
 }

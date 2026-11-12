@@ -803,39 +803,172 @@
       await loadAdminData();
     }catch(error){console.error(error);alert(error.message||'No se pudo eliminar la confirmación.');button.disabled=false;}
   }
+
+  function buildAttendanceDirectory(guests, invites, weddingRows) {
+    const norm=value=>String(value||'').trim().toLocaleLowerCase('es-CL');
+    const validSide=side=>side==='novio'||side==='novia';
+    const invById=new Map(invites.map(i=>[i.id,i]));
+    const listById=new Map(weddingRows.map(r=>[r.id,r]));
+    const out=[];
+    const byName=(name,inviteId)=>weddingRows.filter(r=>norm(r.nombre)===norm(name)&&(!inviteId?!r.invitacion_id:r.invitacion_id===inviteId));
+    for(const g of guests){
+      const inv=invById.get(g.invitacion_id);
+      const manual=listById.get(g._manualListId);
+      const candidates=byName(g.nombre,g.invitacion_id);
+      const sides=[...new Set(candidates.map(r=>r.lado).filter(validSide))];
+      const side=validSide(inv?.lado)?inv.lado:validSide(manual?.lado)?manual.lado:sides.length===1?sides[0]:'sin_lado';
+      const groupUnit=inv?.tipo==='familia_libre'&&g.asistencia==='No podré asistir'&&norm(g.nombre)===norm(inv.familia);
+      out.push({...g,_side:side,_familyUnit:groupUnit});
+    }
+    const addPending=(name,inv,row,familyUnit=false)=>{
+      if(!norm(name))return;
+      const side=validSide(inv?.lado)?inv.lado:validSide(row?.lado)?row.lado:'sin_lado';
+      const inviteId=inv?.id||null;
+      const existing=out.some(g=>{
+        if(inviteId){
+          if(g.invitacion_id!==inviteId)return false;
+          if(familyUnit)return true;
+          return norm(g.nombre)===norm(name);
+        }
+        if(g.invitacion_id||norm(g.nombre)!==norm(name))return false;
+        return g._side===side || (g._side==='sin_lado'&&byName(name,null).length===1);
+      });
+      if(existing)return;
+      out.push({id:'pending:'+(row?.id||inviteId+':'+norm(name)),nombre:name,confirmante:inv?(inv.tipo==='familia_libre'?inv.familia:(inv.invitados||[]).join(' y ')||inv.titulo_portada):name,asistencia:'Por confirmar',contacto_integrante:row?.whatsapp||'',mensaje:inviteId?'':'Sin enlace de invitación',grupo_id:inviteId||('pending:'+row?.id),invitacion_id:inviteId,_side:side,_pending:true,_familyUnit:familyUnit,_weddingRow:row||null});
+    };
+    for(const inv of invites){
+      if(inv.tipo==='familia_libre'){
+        if(!out.some(g=>g.invitacion_id===inv.id))addPending(inv.familia||inv.titulo_portada,inv,null,true);
+      }else{
+        for(const name of (inv.invitados||[]))addPending(name,inv,byName(name,inv.id)[0]);
+      }
+    }
+    for(const row of weddingRows){
+      const inv=invById.get(row.invitacion_id);
+      if(inv?.tipo==='familia_libre')continue; // one family unit until actual members are known
+      addPending(row.nombre,inv,row);
+    }
+    return out;
+  }
+  const attendanceFilters={families:{},guests:{}};
+  function attendanceSideTitle(side){return side==='novio'?'Invitados del novio':side==='novia'?'Invitados de la novia':'Sin lado asignado';}
+  function attendanceState(g){return g.asistencia==='Sí asistiré'?'si':g.asistencia==='No podré asistir'?'no':'pending';}
+  function attendanceCounts(rows){
+    const result={si:0,no:0,pending:0,familyNo:0,familyPending:0};
+    for(const g of rows){const state=attendanceState(g);if(g._familyUnit&&state==='no')result.familyNo++;else if(g._familyUnit&&state==='pending')result.familyPending++;else result[state]++;}
+    return result;
+  }
+  function makeAttendanceSide(side,rows,kind,rerender){
+    const section=document.createElement('section');section.className='attendance-side-panel';
+    const h=document.createElement('h3');h.textContent=attendanceSideTitle(side);section.append(h);
+    const counts=attendanceCounts(rows);
+    const summary=document.createElement('div');summary.className='attendance-side-metrics';
+    const current=attendanceFilters[kind][side]||'all';
+    for(const [key,label,value] of [['si','Sí asisten',counts.si],['no','No asisten',counts.no],['pending','Sin respuesta',counts.pending]]){
+      const button=document.createElement('button');button.type='button';button.className='attendance-side-metric'+(current===key?' selected':'');button.setAttribute('aria-pressed',String(current===key));
+      const count=document.createElement('strong');count.textContent=value;
+      const text=document.createElement('span');text.textContent=label;button.append(count,text);
+      const extra=key==='no'?counts.familyNo:key==='pending'?counts.familyPending:0;
+      if(extra){const note=document.createElement('small');note.textContent='+ '+extra+' familia(s)';button.append(note);}
+      button.onclick=()=>{attendanceFilters[kind][side]=current===key?'all':key;rerender();};summary.append(button);
+    }
+    section.append(summary);
+    const toolbar=document.createElement('div');toolbar.className='attendance-side-toolbar';
+    const all=document.createElement('button');all.type='button';all.className='mini-button compact-button';all.textContent='Ver todos';all.setAttribute('aria-pressed',String(current==='all'));all.onclick=()=>{attendanceFilters[kind][side]='all';rerender();};
+    const text=document.createElement('span');text.textContent='Personas identificadas; las familias sin número conocido se cuentan aparte.';toolbar.append(all,text);section.append(toolbar);
+    return {section,visible:current==='all'?rows:rows.filter(g=>attendanceState(g)===current)};
+  }
+
   function patchAttendanceDeletionRenderers() {
+    const css=document.createElement('style');
+    css.textContent=`
+      .attendance-side-panel{margin:20px 0;padding:18px;border:1px solid var(--admin-line,#ddd);border-radius:16px;background:var(--admin-surface,#fff);min-width:0}
+      .attendance-side-panel>h3{margin:0 0 12px;font-size:19px;color:var(--admin-gold-dark,#69543c)}
+      .attendance-side-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+      .attendance-side-metric{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;border:1px solid var(--admin-line,#ddd);border-radius:12px;background:transparent;color:inherit;text-align:left;cursor:pointer;min-width:0}
+      .attendance-side-metric strong{font-size:25px;line-height:1}.attendance-side-metric span{font-size:12px;font-weight:650}.attendance-side-metric small{font-size:11px}
+      .attendance-side-metric.selected{border-color:var(--admin-olive,#797b5a);box-shadow:inset 0 0 0 1px var(--admin-olive,#797b5a)}
+      .attendance-side-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:#70685e}
+      .attendance-side-panel .family-card{margin:10px 0}.attendance-side-panel .admin-table-wrap{overflow-x:auto}
+      @media(max-width:480px){.attendance-side-panel{padding:10px}.attendance-side-metric{padding:9px 6px}.attendance-side-metric strong{font-size:20px}}
+    `;document.head.append(css);
     const td=(tr,label,value)=>{
       const cell=document.createElement('td');cell.dataset.label=label;
       cell.append(value instanceof Node?value:document.createTextNode(String(value||'-')));tr.append(cell);
     };
-    renderFamilies=function(){
-      const container=document.getElementById('familyList');container.replaceChildren();
+    const directory=()=>buildAttendanceDirectory(allGuests,allInvites,weddingListRows);
+    function editPending(g){
+      const inv=allInvites.find(i=>i.id===g.invitacion_id);
+      if(inv){openAttendanceEditor(inv);return;}
+      const row=g._weddingRow;
+      if(row){
+        const choice=document.createElement('dialog');choice.style.cssText='padding:20px;border:1px solid #ddd;border-radius:14px;max-width:90vw';
+        const title=document.createElement('h3');title.textContent='Confirmar asistencia de '+row.nombre;choice.append(title);
+        for(const [value,label] of [['si','Sí asistiré'],['no','No asistiré']]){
+          const b=document.createElement('button');b.type='button';b.className='mini-button';b.textContent=label;
+          b.onclick=async()=>{const result=await client.from('lista_novios').update({asistencia_estado:value,updated_at:new Date().toISOString()}).eq('id',row.id).is('invitacion_id',null).select('id').single();if(result.error){alert('No se pudo guardar. Actualiza los datos.');return;}choice.close();await loadAdminData();};choice.append(b);
+        }
+        const cancel=document.createElement('button');cancel.type='button';cancel.className='mini-button';cancel.textContent='Cancelar';cancel.onclick=()=>choice.close();choice.append(cancel);
+        choice.addEventListener('close',()=>choice.remove(),{once:true});document.body.append(choice);choice.showModal();
+      }
+    }
+    function rowAction(g){
+      if(!g._pending)return deleteAttendanceButton('Eliminar',b=>removeAttendance(g,false,b));
+      if(!g.invitacion_id&&!g._weddingRow)return '-';
+      const b=document.createElement('button');b.type='button';b.className='mini-button compact-button';b.textContent='Confirmar';b.onclick=()=>editPending(g);return b;
+    }
+    function groupKey(g){return g.invitacion_id?'invite:'+g.invitacion_id:g._pending?'pending:'+g.id:confirmationGroupKey(g);}
+    function renderSideGroups(container,side,rows){
+      const {section,visible}=makeAttendanceSide(side,rows,'families',renderFamilies);
       const groups=new Map();
-      for(const guest of allGuests){const key=confirmationGroupKey(guest);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(guest);}
-      if(!groups.size){const p=document.createElement('p');p.className='empty-text';p.textContent='Aún no hay confirmaciones.';container.append(p);return;}
-      for(const guests of groups.values()){
+      for(const guest of rows){const key=groupKey(guest);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(guest);}
+      const visibleKeys=new Set(visible.map(groupKey));
+      for(const [key,guests] of groups){
+        if(!visibleKeys.has(key))continue;
         const first=guests[0],card=document.createElement('article');card.className='family-card';
         const header=document.createElement('div');header.className='family-header';header.style.flexWrap='wrap';
         const title=document.createElement('div'),h=document.createElement('h3'),p=document.createElement('p');
         h.textContent=normalizeRow(first).familia;
-        p.textContent=guests.filter(g=>g.asistencia==='Sí asistiré').length+' asiste(n) · '+guests.filter(g=>g.asistencia==='No podré asistir').length+' no asiste(n)';
-        title.append(h,p);header.append(title,deleteAttendanceButton('Eliminar confirmación',b=>removeAttendance(first,true,b)));card.append(header);
+        const counts=attendanceCounts(guests);
+        p.textContent=counts.si+' asiste(n) · '+counts.no+' no asiste(n) · '+counts.pending+' sin respuesta'+(counts.familyNo?' · familia no asiste':'')+(counts.familyPending?' · familia sin respuesta':'');
+        title.append(h,p);header.append(title);
+        const response=guests.find(g=>!g._pending);
+        if(response)header.append(deleteAttendanceButton('Eliminar confirmación',b=>removeAttendance(response,true,b)));
+        else header.append(rowAction(first));
+        card.append(header);
         const table=document.createElement('table');table.className='mini-table';
         const head=document.createElement('thead'),tr=document.createElement('tr');
         for(const label of ['Persona','Estado','Contacto','Acciones']){const th=document.createElement('th');th.textContent=label;tr.append(th);}head.append(tr);table.append(head);
         const body=document.createElement('tbody');
-        for(const g of guests){const r=normalizeRow(g),row=document.createElement('tr');td(row,'Persona',r.asistente);td(row,'Estado',r.estado);td(row,'Contacto',r.contacto||'Sin contacto');td(row,'Acciones',deleteAttendanceButton('Eliminar',b=>removeAttendance(g,false,b)));body.append(row);}
-        table.append(body);card.append(table);container.append(card);
+        for(const g of guests){const r=normalizeRow(g),row=document.createElement('tr');td(row,'Persona',r.asistente+(g._familyUnit?' (familia)':''));td(row,'Estado',r.estado);td(row,'Contacto',r.contacto||'Sin contacto');td(row,'Acciones',rowAction(g));body.append(row);}
+        table.append(body);card.append(table);section.append(card);
       }
+      if(!visible.length){const p=document.createElement('p');p.className='empty-text';p.textContent='No hay registros en esta categoría.';section.append(p);}
+      container.append(section);
+    }
+    renderFamilies=function(){
+      const container=document.getElementById('familyList');container.replaceChildren();
+      const data=directory();
+      for(const side of ['novio','novia','sin_lado']){const rows=data.filter(g=>g._side===side);if(side==='sin_lado'&&!rows.length)continue;renderSideGroups(container,side,rows);}
     };
-    const table=document.getElementById('guestTable')?.closest('table');
-    const header=table?.querySelector('thead tr');
-    if(header&&!header.querySelector('[data-attendance-delete]')){const th=document.createElement('th');th.dataset.attendanceDelete='1';th.textContent='Acciones';header.append(th);}
+    const original=document.getElementById('guestTable')?.closest('.admin-table-wrap');
+    const guestContainer=document.createElement('div');guestContainer.id='attendanceGuestSides';
+    if(original){original.hidden=true;original.after(guestContainer);}
     renderGuests=function(){
-      const body=document.getElementById('guestTable');body.replaceChildren();
-      for(const g of allGuests){const r=normalizeRow(g),tr=document.createElement('tr');
-        td(tr,'Familia',r.familia);td(tr,'Asistente',r.asistente);td(tr,'Estado',r.estado);td(tr,'Contacto',r.contacto||'Sin contacto');td(tr,'Mensaje',r.mensaje||'-');
-        td(tr,'WhatsApp',makeWhatsapp(r.contacto,r.asistente)||'-');td(tr,'Acciones',deleteAttendanceButton('Eliminar',b=>removeAttendance(g,false,b)));body.append(tr);}
+      guestContainer.replaceChildren();const data=directory();
+      for(const side of ['novio','novia','sin_lado']){
+        const rows=data.filter(g=>g._side===side);if(side==='sin_lado'&&!rows.length)continue;
+        const {section,visible}=makeAttendanceSide(side,rows,'guests',renderGuests);
+        const wrap=document.createElement('div');wrap.className='admin-table-wrap';const table=document.createElement('table');table.className='admin-table';
+        const head=document.createElement('thead'),tr=document.createElement('tr');
+        for(const label of ['Familia','Asistente','Estado','Contacto','Mensaje','WhatsApp','Acciones']){const th=document.createElement('th');th.textContent=label;tr.append(th);}head.append(tr);table.append(head);
+        const body=document.createElement('tbody');
+        for(const g of visible){const r=normalizeRow(g),tr=document.createElement('tr');
+          td(tr,'Familia',r.familia);td(tr,'Asistente',r.asistente+(g._familyUnit?' (familia)':''));td(tr,'Estado',r.estado);td(tr,'Contacto',r.contacto||'Sin contacto');td(tr,'Mensaje',r.mensaje||'-');
+          td(tr,'WhatsApp',makeWhatsapp(r.contacto,r.asistente)||'-');td(tr,'Acciones',rowAction(g));body.append(tr);}
+        if(!visible.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=7;cell.textContent='No hay registros en esta categoría.';row.append(cell);body.append(row);}
+        table.append(body);wrap.append(table);section.append(wrap);guestContainer.append(section);
+      }
     };
   }
 
