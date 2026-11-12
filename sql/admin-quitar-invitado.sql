@@ -53,6 +53,16 @@ BEGIN
   END IF;
   RETURN;
  END IF;
+ -- Exact duplicate cleanup: retain the surviving linked identity.
+ IF p_scope='list' AND EXISTS(SELECT 1 FROM public.lista_novios l WHERE l.invitacion_id=v_inv.id AND l.id<>v_list.id AND lower(btrim(l.nombre))=lower(btrim(v_name))) THEN
+  DELETE FROM public.lista_novios WHERE id=v_list.id;
+  RETURN;
+ END IF;
+ IF p_scope='guest' AND EXISTS(SELECT 1 FROM public.invitados g WHERE g.invitacion_id=v_inv.id AND g.id<>v_guest.id AND lower(btrim(g.nombre))=lower(btrim(v_name))) THEN
+  DELETE FROM public.invitados WHERE id=v_guest.id;
+  UPDATE public.invitaciones_personalizadas SET updated_at=clock_timestamp() WHERE id=v_inv.id;
+  RETURN;
+ END IF;
  IF v_inv.tipo='familia_libre' AND lower(btrim(v_name))=lower(btrim(v_inv.familia)) THEN v_entire:=true; END IF;
  IF v_inv.tipo='individual_acompanante' AND lower(btrim(v_name))=lower(btrim(v_inv.invitados[1])) THEN v_entire:=true; END IF;
  IF v_inv.tipo='lista_cerrada' THEN

@@ -892,7 +892,8 @@
     else {alert('No se encontró el registro. Actualiza los datos.');return;}
     const normalized=normalizeWeddingName(g.nombre);
     const removesLink=inv&&(scope==='invite_family'||(inv.tipo==='individual_acompanante'&&normalized===normalizeWeddingName(inv.invitados?.[0]))||(inv.tipo==='lista_cerrada'&&(inv.invitados||[]).every(n=>normalizeWeddingName(n)===normalized)));
-    const description='¿Quitar definitivamente a '+g.nombre+' de todos lados? Se eliminará su registro de la lista de novios, asistencia y confirmaciones vinculadas. '+(removesLink?'También se eliminará su enlace de invitación y los integrantes dependientes, si existen.':'Los demás invitados y sus enlaces se conservarán.')+' Esta acción no se puede deshacer.';
+    const duplicate=scope==='list'&&inv?weddingListRows.some(r=>r.id!==target&&r.invitacion_id===inv.id&&normalizeWeddingName(r.nombre)===normalized):scope==='guest'&&inv?allGuests.some(r=>!r._manualListId&&r.id!==target&&r.invitacion_id===inv.id&&normalizeWeddingName(r.nombre)===normalized):false;
+    const description=duplicate?'¿Quitar este registro duplicado de '+g.nombre+'? Se conservará el otro registro vinculado.':'¿Quitar definitivamente a '+g.nombre+' de todos lados? Se eliminará su registro de la lista de novios, asistencia y confirmaciones vinculadas. '+(removesLink?'También se eliminará su enlace de invitación y los integrantes dependientes, si existen.':'Los demás invitados y sus enlaces se conservarán.')+' Esta acción no se puede deshacer.';
     if(!confirm(description))return;
     button.disabled=true;
     try{
